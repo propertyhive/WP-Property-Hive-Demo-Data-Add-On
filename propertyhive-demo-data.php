@@ -157,6 +157,11 @@ final class PH_Demo_Data {
             $data_item['post']['post_title'] = $this->generate_contact_name();
         }
 
+        if ( isset( $data_item['post']['post_excerpt'] ) && $data_item['post']['post_excerpt'] == 'summary_description' )
+        {
+            $data_item['post']['post_excerpt'] = $this->generate_lorem_ipsum();
+        }
+
         if ( isset( $fields['meta'] ) )
         {
             foreach( $fields['meta'] as $meta_key => $options )
@@ -317,6 +322,12 @@ final class PH_Demo_Data {
         return $data_item;
     }
 
+    private function generate_lorem_ipsum( $num_paragraphs = 1, $length = 'short' )
+    {
+        $text = file_get_contents('http://loripsum.net/api/plaintext/' . $num_paragraphs . '/' . $length);
+        return $text;
+    }
+
     private function generate_contact_name()
     {
         $forename_array = PH_Demo_Data_Banks::$forenames;
@@ -336,7 +347,7 @@ final class PH_Demo_Data {
                 $data_fields['post'] = array(
                     'post_type' => $section,
                     'post_title' => 'property_address',
-                    'post_excerpt' => '',
+                    'post_excerpt' => 'summary_description',
                     'post_content' 	 => '',
                     'post_status'    => 'publish',
                     'comment_status' => 'closed',
@@ -529,6 +540,41 @@ final class PH_Demo_Data {
                             'field_bounds' => array('min' => 0, 'max' => 3),
                             'dependent_field' => '_department',
                             'dependent_values' => array('residential-sales', 'residential-lettings'),
+                        ),
+                        '_rooms' => array(
+                            'field_value' => '1',
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('residential-sales', 'residential-lettings'),
+                        ),
+                        '_room_name_0' => array(
+                            'field_value' => 'Full Description',
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('residential-sales', 'residential-lettings'),
+                        ),
+                        '_room_dimensions_0' => array(
+                            'field_value' => '',
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('residential-sales', 'residential-lettings'),
+                        ),
+                        '_room_description_0' => array(
+                            'field_value' => trim( $this->generate_lorem_ipsum(3, 'medium') ),
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('residential-sales', 'residential-lettings'),
+                        ),
+                        '_descriptions' => array(
+                            'field_value' => '1',
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('commercial'),
+                        ),
+                        '_description_name_0' => array(
+                            'field_value' => 'Full Description',
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('commercial'),
+                        ),
+                        '_description_0' => array(
+                            'field_value' => trim( $this->generate_lorem_ipsum(3, 'medium') ),
+                            'dependent_field' => '_department',
+                            'dependent_values' => array('commercial'),
                         ),
                         '_for_sale' => array(
                             'possible_values' => PH_Demo_Data::YES_OR_BLANK,
