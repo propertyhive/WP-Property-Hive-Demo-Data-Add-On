@@ -149,7 +149,13 @@ final class PH_Demo_Data {
                 '_demo_data' => 'yes',
             ),
             'taxonomies' => array(),
+            'related' => array(),
         );
+
+        if ( isset( $data_item['post']['post_title'] ) && $data_item['post']['post_title'] == 'contact_name' )
+        {
+            $data_item['post']['post_title'] = $this->generate_contact_name();
+        }
 
         if ( isset( $fields['meta'] ) )
         {
@@ -293,7 +299,30 @@ final class PH_Demo_Data {
             }
         }
 
+        if ( isset( $fields['related'] ) )
+        {
+            foreach( $fields['related'] as $related )
+            {
+                if ( isset( $related['meta_key'] ) )
+                {
+                    $related_data_fields = $this->get_section_data_fields( $related['section'] );
+
+                    $related_data_item = $this->build_data_item( $related_data_fields );
+
+                    $data_item['related'][$related['meta_key']] = $related_data_item;
+                }
+            }
+        }
+
         return $data_item;
+    }
+
+    private function generate_contact_name()
+    {
+        $forename_array = PH_Demo_Data_Banks::$forenames;
+        $surname_array = PH_Demo_Data_Banks::$surnames;
+
+        return $forename_array[array_rand($forename_array)] . ' ' . $surname_array[array_rand($surname_array)];
     }
 
     private function get_section_data_fields($section)
@@ -311,6 +340,13 @@ final class PH_Demo_Data {
                     'post_content' 	 => '',
                     'post_status'    => 'publish',
                     'comment_status' => 'closed',
+                );
+
+                $data_fields['related'] = array(
+                    array(
+                        'section' => 'property_owner',
+                        'meta_key' => '_owner_contact_id',
+                    ),
                 );
 
                 $data_fields['taxonomy'] = array(
@@ -558,6 +594,39 @@ final class PH_Demo_Data {
                     )
                 );
                 break;
+            case 'property_owner':
+
+                $data_fields['post'] = array(
+                    'post_type' => 'contact',
+                    'post_title' => 'contact_name',
+                    'post_content' 	 => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $data_fields['meta'] = array(
+                    'property_address' => array(
+                        'field_type' => 'address',
+                    ),
+                    '_address_country' => array(
+                        'field_value' => get_option('propertyhive_default_country', 'GB')
+                    ),
+                    '_telephone_number' => array(
+                        'field_value' => '01234 567890'
+                    ),
+                    '_telephone_number_clean' => array(
+                        'field_value' => '01234567890'
+                    ),
+                    '_email_address' => array(
+                        'field_type' => 'email_address'
+                    ),
+                    '_contact_types' => array(
+                        'field_value' => array( 'owner' )
+                    ),
+                );
+
+                break;
         }
 
         $data_fields = apply_filters( 'propertyhive_demo_data_' . $section . '_fields', $data_fields );
@@ -572,23 +641,36 @@ final class PH_Demo_Data {
         {
             foreach( $_POST['data_items'] as $data_item )
             {
-                $post_id = wp_insert_post( $data_item['post'], true );
-
-                foreach( $data_item['meta_fields'] as $meta_key => $meta_value)
-                {
-                    update_post_meta( $post_id, $meta_key, $meta_value );
-                }
-
-                foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
-                {
-                    wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
-                }
+                $post_id = $this->create_demo_data_record($data_item);
                 ++$records_inserted;
             }
         }
 
         echo $records_inserted;
         die();
+    }
+
+    private function create_demo_data_record( $data_item )
+    {
+        $post_id = wp_insert_post( $data_item['post'], true );
+
+        foreach( $data_item['meta_fields'] as $meta_key => $meta_value)
+        {
+            update_post_meta( $post_id, $meta_key, $meta_value );
+        }
+
+        foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
+        {
+            wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
+        }
+
+        foreach ( $data_item['related'] as $related_meta_key => $related_item)
+        {
+            $related_post_id = $this->create_demo_data_record($related_item);
+            update_post_meta( $post_id, $related_meta_key, array( $related_post_id ) );
+        }
+
+        return $post_id;
     }
 
     /**
