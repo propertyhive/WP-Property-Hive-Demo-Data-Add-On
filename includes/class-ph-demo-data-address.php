@@ -23,11 +23,17 @@ class PH_Demo_Data_Address {
 
         $address['_address_name_number'] = $this->generate_address_name_number();
 
-        $street_prefix_array = PH_Demo_Data_Banks::$forenames;
+        $street_prefix_array = PH_Demo_Data_Banks::$surnames;
+        $street_prefix_array = apply_filters( 'propertyhive_demo_data_street_prefixes', $street_prefix_array );
+
         $street_suffix_array = PH_Demo_Data_Banks::$street_suffixes;
+        $street_suffix_array = apply_filters( 'propertyhive_demo_data_street_suffixes', $street_suffix_array );
+
         $address['_address_street'] = $street_prefix_array[array_rand($street_prefix_array)] . ' ' . $street_suffix_array[array_rand($street_suffix_array)];
 
         $address_array = PH_Demo_Data_Banks::$post_towns;
+        $address_array = apply_filters( 'propertyhive_demo_data_post_towns', $address_array );
+
         $town = array_rand($address_array);
         $postcodes_array = $address_array[$town];
         $postcode_one = $postcodes_array[array_rand($postcodes_array)];
