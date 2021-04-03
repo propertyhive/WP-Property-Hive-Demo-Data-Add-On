@@ -79,6 +79,7 @@ final class PH_Demo_Data {
 
     private function includes()
     {
+        include_once( 'includes/class-ph-demo-data-address.php' );
         include_once( 'includes/class-ph-demo-data-banks.php' );
     }
 
@@ -204,7 +205,8 @@ final class PH_Demo_Data {
                                 }
                                 break;
                             case 'address':
-                                $demo_address_fields = $this->generate_demo_address_meta_fields();
+                                $PH_Demo_Data_Address = new PH_Demo_Data_Address();
+                                $demo_address_fields = $PH_Demo_Data_Address->generate_demo_address_meta_fields();
                                 foreach ( $demo_address_fields as $meta_key => $meta_value )
                                 {
                                     $data_item['meta_fields'][$meta_key] = $meta_value;
@@ -524,54 +526,6 @@ final class PH_Demo_Data {
         $data_fields = apply_filters( 'propertyhive_demo_data_' . $section . '_fields', $data_fields );
 
         return $data_fields;
-    }
-
-    public function generate_demo_address_meta_fields()
-    {
-        $address = array();
-
-        $address['_address_name_number'] = $this->generate_address_name_number();
-
-        $street_prefix_array = PH_Demo_Data_Banks::$forenames;
-        $street_suffix_array = PH_Demo_Data_Banks::$street_suffixes;
-        $address['_address_street'] = $street_prefix_array[array_rand($street_prefix_array)] . ' ' . $street_suffix_array[array_rand($street_suffix_array)];
-
-        $address_array = PH_Demo_Data_Banks::$post_towns;
-        $town = array_rand($address_array);
-        $postcodes_array = $address_array[$town];
-        $postcode_one = $postcodes_array[array_rand($postcodes_array)];
-        $postcode_two = $this->generate_postcode_suffix();
-
-        $address['_address_two'] = '';
-        $address['_address_three'] = $town;
-        $address['_address_four'] = '';
-        $address['_address_postcode'] = $postcode_one . ' ' . $postcode_two;
-
-        return $address;
-    }
-
-    public function generate_address_name_number()
-    {
-        $name_number = rand(1, 150);
-
-        $rand_num = rand(1, 100);
-        if ($rand_num % 10 === 0)
-        {
-            $prefix_array = array(
-                'Flat' => 'Flat',
-                'Apartment' => 'Apartment',
-                'Unit' => 'Unit',
-            );
-            $name_number = array_rand($prefix_array) . ' ' . rand(1, 20) . ', ' . $name_number;
-        }
-
-        return $name_number;
-    }
-
-    public function generate_postcode_suffix()
-    {
-        $letters_array = array('A', 'B', 'D', 'E', 'F', 'G', 'H', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'W', 'X', 'Y', 'Z');
-        return rand(0, 9) . $letters_array[array_rand($letters_array)] . $letters_array[array_rand($letters_array)];
     }
 
     public function ajax_create_demo_data_records()
