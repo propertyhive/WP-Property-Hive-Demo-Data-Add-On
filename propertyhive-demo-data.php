@@ -16,6 +16,7 @@ final class PH_Demo_Data {
 
     const YES_OR_BLANK = array('', 'yes');
     const NUM_DEMO_DATA_ITEMS = 10;
+    const NUM_FEATURES = 6;
 
     /**
      * @var string
@@ -220,6 +221,42 @@ final class PH_Demo_Data {
                                     ));
                                 }
                                 break;
+                            case 'features':
+                                if ( get_option('propertyhive_features_type') == 'checkbox' )
+                                {
+                                    $features_taxonomies = [];
+                                    $args = array(
+                                        'hide_empty' => false,
+                                        'parent' => 0
+                                    );
+                                    $terms = get_terms( 'property_feature', $args );
+                                    if ( !empty( $terms ) && !is_wp_error( $terms ) )
+                                    {
+                                        $i = 1;
+                                        shuffle($terms);
+                                        foreach( $terms as $term )
+                                        {
+                                            if ( $i > PH_Demo_Data::NUM_FEATURES ) { break; }
+
+                                            $features_taxonomies[] = $term->term_id;
+                                            ++$i;
+                                        }
+
+                                        if ( count($features_taxonomies) > 0 )
+                                        {
+                                            $data_item['taxonomies']['property_feature'] = $features_taxonomies;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    $data_item['meta_fields']['_features'] = PH_Demo_Data::NUM_FEATURES;
+                                    for ($i = 0; $i < PH_Demo_Data::NUM_FEATURES; ++$i)
+                                    {
+                                        $data_item['meta_fields']['_feature_' . $i] = 'Feature ' . ( $i + 1 );
+                                    }
+                                }
+                                break;
                         }
                     }
                 }
@@ -250,7 +287,7 @@ final class PH_Demo_Data {
                     if ( !empty( $terms ) && !is_wp_error( $terms ) )
                     {
                         $rand = rand(0, count($terms)-1);
-                        $data_item['taxonomies'][$taxonomy['name']] = $terms[$rand];
+                        $data_item['taxonomies'][$taxonomy['name']] = $terms[$rand]->term_id;
                     }
                 }
             }
@@ -542,9 +579,9 @@ final class PH_Demo_Data {
                     update_post_meta( $post_id, $meta_key, $meta_value );
                 }
 
-                foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_object)
+                foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
                 {
-                    wp_set_post_terms( $post_id, $taxonomy_object['term_id'], $taxonomy_name );
+                    wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
                 }
                 ++$records_inserted;
             }
