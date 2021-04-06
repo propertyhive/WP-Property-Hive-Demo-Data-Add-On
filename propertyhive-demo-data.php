@@ -127,6 +127,7 @@ final class PH_Demo_Data {
     public function ajax_get_section_demo_data()
     {
         $data_items = array();
+
         if ( isset( $_POST['section'] ) )
         {
             $data_fields = $this->get_section_data_fields($_POST['section']);
@@ -166,26 +167,41 @@ final class PH_Demo_Data {
         {
             foreach( $fields['meta'] as $meta_key => $options )
             {
+                if ( !isset( $options['parent_meta_key'] ) )
+                {
+                    $existing_meta_array = $data_item['meta_fields'];
+                }
+                else
+                {
+                    if ( !isset( $data_item['meta_fields'][$options['parent_meta_key']] ) )
+                    {
+                        $data_item['meta_fields'][$options['parent_meta_key']] = array();
+                    }
+                    $existing_meta_array = $data_item['meta_fields'][$options['parent_meta_key']];
+                }
+
                 if (
                     !isset( $options['dependent_field'] )
                     ||
                     (
-                        isset( $data_item['meta_fields'][$options['dependent_field']] )
+                        isset( $existing_meta_array[$options['dependent_field']] )
                         &&
                         isset( $options['dependent_values'] )
                         &&
-                        in_array( $data_item['meta_fields'][$options['dependent_field']], $options['dependent_values'] )
+                        in_array( $existing_meta_array[$options['dependent_field']], $options['dependent_values'] )
                     )
                 )
                 {
+                    $data_value = null;
+
                     if ( isset( $options['field_value'] ) )
                     {
-                        $data_item['meta_fields'][$meta_key] = $options['field_value'];
+                        $data_value = $options['field_value'];
                     }
                     elseif ( isset( $options['possible_values'] ) )
                     {
                         $rand = rand(0, count($options['possible_values'])-1);
-                        $data_item['meta_fields'][$meta_key] = $options['possible_values'][$rand];
+                        $data_value = $options['possible_values'][$rand];
                     }
                     elseif ( isset( $options['field_type'] ) )
                     {
@@ -195,25 +211,73 @@ final class PH_Demo_Data {
                                 $start_timestamp = strtotime('-2 month', time());
                                 $end_timestamp = strtotime('+2 month', time());
                                 $random_timestamp = rand($start_timestamp, $end_timestamp);
-                                $data_item['meta_fields'][$meta_key] = date('Y-m-d', $random_timestamp);
+                                $data_value = date('Y-m-d', $random_timestamp);
                                 break;
                             case 'integer':
                                 if ( isset( $options['field_bounds'] ) )
                                 {
-                                    $min = isset( $options['field_bounds']['min'] ) ? $options['field_bounds']['min'] : 0;
-                                    $max = isset( $options['field_bounds']['max'] ) ? $options['field_bounds']['max'] : getrandmax();
-                                    $rand_int = rand($min, $max);
+                                    $min = 0;
+                                    if ( isset( $options['field_bounds']['min'] ) )
+                                    {
+                                        if ( is_string( $options['field_bounds']['min'] ) && isset( $existing_meta_array[$options['field_bounds']['min']] ) )
+                                        {
+                                            $min = $existing_meta_array[$options['field_bounds']['min']];
+                                        }
+                                        else
+                                        {
+                                            $min = $options['field_bounds']['min'];
+                                        }
+                                    }
+
+                                    $max = getrandmax();
+                                    if ( isset( $options['field_bounds']['max'] ) )
+                                    {
+                                        if ( is_string( $options['field_bounds']['max'] ) && isset( $existing_meta_array[$options['field_bounds']['max']] ) )
+                                        {
+                                            $max = $existing_meta_array[$options['field_bounds']['max']];
+                                        }
+                                        else
+                                        {
+                                            $max = $options['field_bounds']['max'];
+                                        }
+                                    }
+
+                                    $data_value = rand($min, $max);
 
                                     if ( isset( $options['field_bounds']['round'] ) )
                                     {
-                                        $rand_int = round($rand_int, $options['field_bounds']['round']);
+                                        $data_value = round($data_value, $options['field_bounds']['round']);
                                     }
-
-                                    $data_item['meta_fields'][$meta_key] = $rand_int;
                                 }
                                 else
                                 {
-                                    $data_item['meta_fields'][$meta_key] = rand();
+                                    $data_value = rand();
+                                }
+                                break;
+                            case 'taxonomy_array':
+                                $args = array(
+                                    'hide_empty' => false,
+                                    'parent' => 0
+                                );
+                                $terms = get_terms( $options['field_taxonomy'], $args );
+                                if ( !empty( $terms ) && !is_wp_error( $terms ) )
+                                {
+                                    $taxonomy_ids = array();
+                                    $i = 1;
+                                    $num_entries = rand(1, count($terms));
+                                    shuffle($terms);
+                                    foreach( $terms as $term )
+                                    {
+                                        if ( $i > $num_entries ) { break; }
+
+                                        $taxonomy_ids[] = $term->term_id;
+                                        ++$i;
+                                    }
+
+                                    if ( count($taxonomy_ids) > 0 )
+                                    {
+                                        $data_value = $taxonomy_ids;
+                                    }
                                 }
                                 break;
                             case 'address':
@@ -268,6 +332,50 @@ final class PH_Demo_Data {
                                     }
                                 }
                                 break;
+                            case 'location':
+                                $args = array(
+                                    'hide_empty' => false,
+                                    'parent' => 0
+                                );
+                                $terms = get_terms( 'location', $args );
+                                if ( !empty( $terms ) && !is_wp_error( $terms ) )
+                                {
+                                    $rand = rand(0, count($terms)-1);
+                                    if ( get_option('propertyhive_applicant_locations_type') == 'text' )
+                                    {
+                                        $location_key = 'location_text';
+                                        $location_value = $terms[$rand]->name;
+                                    }
+                                    else
+                                    {
+                                        $location_key = 'locations';
+                                        $location_value = $terms[$rand]->term_id;
+                                    }
+                                    $data_item['meta_fields'][$options['parent_meta_key']][$location_key] = array( $location_value );
+                                }
+                                break;
+                        }
+                    }
+
+                    if ( $data_value !== null )
+                    {
+                        if ( !isset( $options['parent_meta_key'] ) )
+                        {
+                            $data_item['meta_fields'][$meta_key] = $data_value;
+
+                            if ( isset( $options['duplicate_to'] ) )
+                            {
+                                $data_item['meta_fields'][$options['duplicate_to']] = $data_value;
+                            }
+                        }
+                        else
+                        {
+                            $data_item['meta_fields'][$options['parent_meta_key']][$meta_key] = $data_value;
+
+                            if ( isset( $options['duplicate_to'] ) )
+                            {
+                                $data_item['meta_fields'][$options['parent_meta_key']][$options['duplicate_to']] = $data_value;
+                            }
                         }
                     }
                 }
@@ -461,24 +569,8 @@ final class PH_Demo_Data {
                     'possible_values' => $office_ids,
                 );
 
-                $departments = array();
-                if ( get_option('propertyhive_active_departments_sales') == 'yes' )
-                {
-                    $departments[] = 'residential-sales';
-                }
-                if ( get_option('propertyhive_active_departments_lettings') == 'yes' )
-                {
-                    $departments[] = 'residential-lettings';
-                }
-                if ( get_option('propertyhive_active_departments_commercial') == 'yes' )
-                {
-                    $departments[] = 'commercial';
-                }
-
-                $departments = array_merge( $departments, array_keys( ph_get_custom_departments( true ) ) );
-
                 $data_fields['meta']['_department'] = array(
-                    'possible_values' => $departments,
+                    'possible_values' => $this->get_active_departments(),
                 );
 
                 $data_fields['meta'] = array_merge( $data_fields['meta'],
@@ -514,7 +606,7 @@ final class PH_Demo_Data {
                         ),
                         '_deposit' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 500, 'max' => 10000, 'round' => -2),
+                            'field_bounds' => array('min' => '_rent', 'max' => 10000, 'round' => -2),
                             'dependent_field' => '_department',
                             'dependent_values' => array('residential-lettings'),
                         ),
@@ -588,13 +680,13 @@ final class PH_Demo_Data {
                         ),
                         '_price_from' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 50000, 'max' => 100000, 'round' => -4),
+                            'field_bounds' => array('min' => 50000, 'max' => 2000000, 'round' => -4),
                             'dependent_field' => '_for_sale',
                             'dependent_values' => array('yes'),
                         ),
                         '_price_to' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 100000, 'max' => 2000000, 'round' => -4),
+                            'field_bounds' => array('min' => '_price_from', 'max' => 2000000, 'round' => -4),
                             'dependent_field' => '_for_sale',
                             'dependent_values' => array('yes'),
                         ),
@@ -605,13 +697,13 @@ final class PH_Demo_Data {
                         ),
                         '_rent_from' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 200, 'max' => 2000, 'round' => -2),
+                            'field_bounds' => array('min' => 200, 'max' => 50000, 'round' => -2),
                             'dependent_field' => '_to_rent',
                             'dependent_values' => array('yes'),
                         ),
                         '_rent_to' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 20000, 'max' => 50000, 'round' => -3),
+                            'field_bounds' => array('min' => '_rent_from', 'max' => 50000, 'round' => -3),
                             'dependent_field' => '_to_rent',
                             'dependent_values' => array('yes'),
                         ),
@@ -622,13 +714,13 @@ final class PH_Demo_Data {
                         ),
                         '_floor_area_from' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 200, 'max' => 2000, 'round' => -2),
+                            'field_bounds' => array('min' => 200, 'max' => 5000, 'round' => -2),
                             'dependent_field' => '_department',
                             'dependent_values' => array('commercial'),
                         ),
                         '_floor_area_to' => array(
                             'field_type' => 'integer',
-                            'field_bounds' => array('min' => 2000, 'max' => 10000, 'round' => -2),
+                            'field_bounds' => array('min' => '_floor_area_from', 'max' => 10000, 'round' => -2),
                             'dependent_field' => '_department',
                             'dependent_values' => array('commercial'),
                         ),
@@ -642,34 +734,152 @@ final class PH_Demo_Data {
                 break;
             case 'property_owner':
 
-                $data_fields['post'] = array(
-                    'post_type' => 'contact',
-                    'post_title' => 'contact_name',
-                    'post_content' 	 => '',
-                    'post_status'    => 'publish',
-                    'comment_status' => 'closed',
-                    'ping_status'    => 'closed',
+                $data_fields['post'] = $this->get_contact_post_parameters();
+
+                $data_fields['meta'] = $this->get_contact_meta_parameters( array('owner') );
+
+                break;
+            case 'applicant':
+
+                $data_fields['post'] = $this->get_contact_post_parameters();
+
+                $data_fields['meta'] = $this->get_contact_meta_parameters(array('applicant'));
+
+                $data_fields['meta']['_applicant_profiles'] = array(
+                    'field_value' => 1,
                 );
 
-                $data_fields['meta'] = array(
-                    'property_address' => array(
-                        'field_type' => 'address',
+                $data_fields['meta']['department'] = array(
+                    'possible_values' => $this->get_active_departments(),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['location'] = array(
+                    'field_type' => 'location',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['notes'] = array(
+                    'field_value' => '',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['send_matching_properties'] = array(
+                    'field_value' => '',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['auto_match_disabled'] = array(
+                    'field_value' => 'yes',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['grading'] = array(
+                    'possible_values' => array('', 'hot'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['max_price'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 50000, 'max' => 2000000, 'round' => -4),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-sales'),
+                    'duplicate_to' => 'max_price_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['match_price_range_lower'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 50000, 'max' => 'max_price', 'round' => -4),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-sales'),
+                    'duplicate_to' => 'match_price_range_lower_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['match_price_range_higher'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 'max_price', 'max' => 2000000, 'round' => -4),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-sales'),
+                    'duplicate_to' => 'match_price_range_higher_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['max_rent'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 200, 'max' => 3000, 'round' => -2),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-lettings'),
+                    'duplicate_to' => 'max_price_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['rent_frequency'] = array(
+                    'field_value' => 'pcm',
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-lettings'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['min_beds'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 0, 'max' => 5),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-sales', 'residential-lettings'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['property_types'] = array(
+                    'field_type' => 'taxonomy_array',
+                    'field_taxonomy' => 'property_type',
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('residential-sales', 'residential-lettings'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['available_as'] = array(
+                    'possible_values' => array(
+                        array( 'sale' ),
+                        array( 'rent' ),
+                        array( 'sale', 'rent' ),
                     ),
-                    '_address_country' => array(
-                        'field_value' => get_option('propertyhive_default_country', 'GB')
-                    ),
-                    '_telephone_number' => array(
-                        'field_value' => '01234 567890'
-                    ),
-                    '_telephone_number_clean' => array(
-                        'field_value' => '01234567890'
-                    ),
-                    '_email_address' => array(
-                        'field_type' => 'email_address'
-                    ),
-                    '_contact_types' => array(
-                        'field_value' => array( 'owner' )
-                    ),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('commercial'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['min_floor_area'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 200, 'max' => 10000, 'round' => -2),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('commercial'),
+                    'duplicate_to' => 'min_floor_area_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['max_floor_area'] = array(
+                    'field_type' => 'integer',
+                    'field_bounds' => array('min' => 'min_floor_area', 'max' => 10000, 'round' => -2),
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('commercial'),
+                    'duplicate_to' => 'max_floor_area_actual',
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['floor_area_units'] = array(
+                    'field_value' => 'sqft',
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('commercial'),
+                    'parent_meta_key' => '_applicant_profile_0',
+                );
+
+                $data_fields['meta']['commercial_property_types'] = array(
+                    'field_type' => 'taxonomy_array',
+                    'field_taxonomy' => 'commercial_property_type',
+                    'dependent_field' => 'department',
+                    'dependent_values' => array('commercial'),
+                    'parent_meta_key' => '_applicant_profile_0',
                 );
 
                 break;
@@ -678,6 +888,65 @@ final class PH_Demo_Data {
         $data_fields = apply_filters( 'propertyhive_demo_data_' . $section . '_fields', $data_fields );
 
         return $data_fields;
+    }
+
+    private function get_contact_post_parameters()
+    {
+        return array(
+            'post_type' => 'contact',
+            'post_title' => 'contact_name',
+            'post_content' 	 => '',
+            'post_status'    => 'publish',
+            'comment_status' => 'closed',
+            'ping_status'    => 'closed',
+        );
+    }
+
+    private function get_contact_meta_parameters( $contact_types )
+    {
+        $current_user = wp_get_current_user();
+
+        return array(
+            'property_address' => array(
+                'field_type' => 'address',
+            ),
+            '_address_country' => array(
+                'field_value' => get_option('propertyhive_default_country', 'GB')
+            ),
+            '_telephone_number' => array(
+                'field_value' => '01234 567890'
+            ),
+            '_telephone_number_clean' => array(
+                'field_value' => '01234567890'
+            ),
+            '_email_address' => array(
+                'field_value' => $current_user->user_email
+            ),
+            '_contact_types' => array(
+                'field_value' => $contact_types
+            ),
+        );
+    }
+
+    private function get_active_departments()
+    {
+        $departments = array();
+        if ( get_option('propertyhive_active_departments_sales') == 'yes' )
+        {
+            $departments[] = 'residential-sales';
+        }
+        if ( get_option('propertyhive_active_departments_lettings') == 'yes' )
+        {
+            $departments[] = 'residential-lettings';
+        }
+        if ( get_option('propertyhive_active_departments_commercial') == 'yes' )
+        {
+            $departments[] = 'commercial';
+        }
+
+        $departments = array_merge( $departments, array_keys( ph_get_custom_departments( true ) ) );
+
+        return $departments;
     }
 
     public function ajax_create_demo_data_records()
@@ -771,6 +1040,15 @@ final class PH_Demo_Data {
             'type'     => 'checkbox',
             'value'    => 'yes',
             'desc'     => '<span id="property_status_span"></span>',
+        );
+
+        $settings[] = array(
+            'title'    => __( 'Applicants', 'propertyhive' ),
+            'id'       => 'applicant',
+            'class'    => 'demo_data_section',
+            'type'     => 'checkbox',
+            'value'    => 'yes',
+            'desc'     => '<span id="applicant_status_span"></span>',
         );
 
         $settings[] = array( 'type' => 'sectionend', 'id' => 'demo_data_settings');
