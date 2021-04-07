@@ -15,8 +15,9 @@ if ( ! class_exists( 'PH_Demo_Data' ) ) :
 final class PH_Demo_Data {
 
     const YES_OR_BLANK = array('', 'yes');
-    const NUM_DEMO_DATA_ITEMS = 10;
+    const NUM_DEMO_DATA_ITEMS = 3;
     const NUM_FEATURES = 6;
+    const NUM_PROPERTY_PHOTOS = 3;
 
     /**
      * @var string
@@ -354,6 +355,39 @@ final class PH_Demo_Data {
                                     $data_item['meta_fields'][$options['parent_meta_key']][$location_key] = array( $location_value );
                                 }
                                 break;
+                            case 'photos':
+
+                                if ( get_option('propertyhive_images_stored_as', '') == 'urls' )
+                                {
+
+                                }
+                                else
+                                {
+                                    $files = glob(dirname(__FILE__) . '/assets/images/*.*');
+                                    shuffle($files);
+
+                                    $media_ids = array();
+                                    for ($i = 0; $i < PH_Demo_Data::NUM_PROPERTY_PHOTOS; ++$i)
+                                    {
+                                        if ( isset($files[$i]) )
+                                        {
+                                            $file_path = $files[$i];
+                                            $file_array = array(
+                                                'name' => basename( $file_path ),
+                                                'tmp_name' => $file_path,
+                                                'error' => 0,
+                                            );
+                                            $media_id = media_handle_sideload( $file_array );
+                                            $media_ids[] = $media_id;
+                                        }
+                                    }
+
+                                    if ( !empty($media_ids) )
+                                    {
+                                        $data_item['meta_fields'][$meta_key] = $media_ids;
+                                    }
+                                }
+                                break;
                         }
                     }
 
@@ -586,6 +620,9 @@ final class PH_Demo_Data {
                         ),
                         '_owner_contact_id' => array(
                             'field_type' => 'owner_id',
+                        ),
+                        '_photos' => array(
+                            'field_type' => 'photos',
                         ),
                         '_price' => array(
                             'field_type' => 'integer',
