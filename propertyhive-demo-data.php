@@ -213,6 +213,9 @@ final class PH_Demo_Data {
                     {
                         switch ( $options['field_type'] )
                         {
+                            case 'contact_name':
+                                $data_value = $this->generate_contact_name();
+                                break;
                             case 'date':
                             case 'datetime':
                                 $start_timestamp = strtotime('-2 month', time());
@@ -394,6 +397,58 @@ final class PH_Demo_Data {
                                     {
                                         $data_item['meta_fields'][$meta_key] = $media_ids;
                                     }
+                                break;
+                            case 'post_id':
+
+                                if ( isset( $options['post_type'] ) )
+                                {
+                                    $args = array(
+                                        'post_type'      => $options['post_type'],
+                                        'posts_per_page' => 1,
+                                        'orderby'        => 'rand',
+                                        'post_status'    => 'publish',
+                                        'meta_query'  => array(
+                                            array(
+                                                'key' => '_demo_data',
+                                                'value' => 'yes',
+                                            )
+                                        )
+                                    );
+
+                                    if ( isset( $options['meta_query'] ) )
+                                    {
+                                        foreach( $options['meta_query'] as $meta_query )
+                                        {
+                                            $additional_meta_query = array(
+                                                'key' => $meta_query['meta_key'],
+                                            );
+
+                                            if ( isset( $meta_query['parent_meta_value'] ) && isset( $existing_meta_array[$meta_query['parent_meta_value']] ) )
+                                            {
+                                                $additional_meta_query['value'] = $existing_meta_array[$meta_query['parent_meta_value']];
+                                            }
+                                            else
+                                            {
+                                                $additional_meta_query['value'] = $meta_query['meta_value'];
+                                            }
+
+                                            if ( isset( $meta_query['compare'] ) )
+                                            {
+                                                $additional_meta_query['compare'] = $meta_query['compare'];
+                                            }
+
+                                            $args['meta_query'][] = $additional_meta_query;
+                                        }
+                                    }
+                                    $query = new WP_Query( $args );
+
+                                    if ( $query->have_posts() ) {
+                                        while ( $query->have_posts() ) {
+                                            $query->the_post();
+                                            $data_value = get_the_ID();
+                                        }
+                                    }
+                                    wp_reset_postdata();
                                 }
                                 break;
                         }
@@ -496,10 +551,10 @@ final class PH_Demo_Data {
             case 'property':
 
                 $data_fields['post'] = array(
-                    'post_type' => $section,
-                    'post_title' => 'property_address',
-                    'post_excerpt' => 'summary_description',
-                    'post_content' 	 => '',
+                    'post_type'      => $section,
+                    'post_title'     => 'property_address',
+                    'post_excerpt'   => 'summary_description',
+                    'post_content'   => '',
                     'post_status'    => 'publish',
                     'comment_status' => 'closed',
                 );
@@ -583,19 +638,8 @@ final class PH_Demo_Data {
                     'possible_values' => $this->get_negotiators(),
                 );
 
-                $args = array(
-                    'fields' => 'ids',
-                    'post_type' => 'office',
-                    'nopaging' => true
-                );
-                $office_query = new WP_Query($args);
-
-                $office_ids = $office_query->posts;
-
-                $office_query->reset_postdata();
-
                 $data_fields['meta']['_office_id'] = array(
-                    'possible_values' => $office_ids,
+                    'possible_values' => $this->get_offices(),
                 );
 
                 $data_fields['meta']['_department'] = array(
@@ -918,8 +962,8 @@ final class PH_Demo_Data {
             case 'appraisal':
 
                 $data_fields['post'] = array(
-                    'post_type' => 'appraisal',
-                    'post_content' 	 => '',
+                    'post_type'      => 'appraisal',
+                    'post_content'   => '',
                     'post_status'    => 'publish',
                     'comment_status' => 'closed',
                     'ping_status'    => 'closed',
@@ -979,7 +1023,284 @@ final class PH_Demo_Data {
                         'possible_values' => array( 'pending', 'cancelled', 'carried_out', 'won', 'lost' ),
                     ),
                 );
+                break;
+            case 'viewing':
 
+                $data_fields['post'] = array(
+                    'post_type'      => 'viewing',
+                    'post_content'   => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $data_fields['meta'] = array(
+                    '_start_date_time' => array(
+                        'field_type' => 'datetime',
+                    ),
+                    '_duration' => array(
+                        'field_value' => 3600,
+                    ),
+                    '_negotiator_id' => array(
+                        'possible_values' => $this->get_negotiators(),
+                    ),
+                    '_status' => array(
+                        'possible_values' => array( 'pending', 'cancelled', 'carried_out' ),
+                    ),
+                    '_feedback_status' => array(
+                        'possible_values' => array( 'not_required', 'interested', 'not_interested' ),
+                        'dependent_field' => '_status',
+                        'dependent_values' => array('carried_out'),
+                    ),
+                    '_feedback_passed_on' => array(
+                        'possible_values' => PH_Demo_Data::YES_OR_BLANK,
+                        'dependent_field' => '_feedback_status',
+                        'dependent_values' => array('interested', 'not_interested'),
+                    ),
+                );
+
+                $departments = $this->get_active_departments();
+                $random_department = $departments[array_rand($departments)];
+
+                $data_fields['meta'] = array_merge(
+                    $data_fields['meta'],
+                    array(
+                        '_property_id' => array(
+                            'field_type' => 'post_id',
+                            'post_type' => 'property',
+                            'meta_query' => array(
+                                array(
+                                    'meta_key' => '_department',
+                                    'meta_value' => $random_department,
+                                ),
+                            ),
+                        ),
+                        '_applicant_contact_id' => array(
+                            'field_type' => 'post_id',
+                            'post_type' => 'contact',
+                            'meta_query' => array(
+                                array(
+                                    'meta_key' => '_applicant_profile_0',
+                                    'meta_value' => $random_department,
+                                    'compare' => 'LIKE',
+                                ),
+                            ),
+                        ),
+                    )
+                );
+                break;
+            case 'offer':
+
+                $data_fields['post'] = array(
+                    'post_type'      => 'offer',
+                    'post_content'   => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $data_fields['meta'] = array(
+                    '_offer_date_time' => array(
+                        'field_type' => 'datetime',
+                    ),
+                    '_amount' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 50000, 'max' => 2000000, 'round' => -4),
+                    ),
+                    '_status' => array(
+                        'possible_values' => array( 'pending', 'declined', 'accepted' ),
+                    ),
+                    '_property_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'property',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_department',
+                                'meta_value' => 'residential-sales',
+                            ),
+                        ),
+                    ),
+                    '_applicant_contact_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'contact',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_applicant_profile_0',
+                                'meta_value' => 'residential-sales',
+                                'compare' => 'LIKE',
+                            ),
+                        ),
+                    ),
+                );
+                break;
+            case 'sale':
+
+                $data_fields['post'] = array(
+                    'post_type'      => 'sale',
+                    'post_content'   => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $data_fields['meta'] = array(
+                    '_sale_date_time' => array(
+                        'field_type' => 'datetime',
+                    ),
+                    '_amount' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 50000, 'max' => 2000000, 'round' => -4),
+                    ),
+                    '_status' => array(
+                        'possible_values' => array( 'current', 'fallen_through', 'exchanged', 'completed' ),
+                    ),
+                    '_property_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'property',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_department',
+                                'meta_value' => 'residential-sales',
+                            ),
+                        ),
+                    ),
+                    '_applicant_contact_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'contact',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_applicant_profile_0',
+                                'meta_value' => 'residential-sales',
+                                'compare' => 'LIKE',
+                            ),
+                        ),
+                    ),
+                );
+
+                break;
+            case 'tenancy':
+
+                $data_fields['post'] = array(
+                    'post_type'      => 'tenancy',
+                    'post_content' 	 => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $default_country_code = get_option('propertyhive_default_country', 'GB');
+                $PH_Countries = new PH_Countries();
+
+                $default_country = $PH_Countries->get_country( $default_country_code );
+
+                $data_fields['meta'] = array(
+                    '_status' => array(
+                        'field_value' => 'application',
+                    ),
+                    '_length' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 6, 'max' => 18),
+                    ),
+                    '_length_units' => array(
+                        'field_value' => 'month',
+                    ),
+                    '_lease_type' => array(
+                        'possible_values' => array( 'assured', 'assured_shorthold' ),
+                    ),
+                    '_start_date' => array(
+                        'field_type' => 'date',
+                    ),
+                    '_end_date' => array(
+                        'field_type' => 'date',
+                    ),
+                    '_rent' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 800, 'max' => 3000, 'round' => -2),
+                    ),
+                    '_rent_frequency' => array(
+                        'possible_values' => array('pw', 'pcm', 'pq', 'pa'),
+                        'dependent_field' => '_department',
+                        'dependent_values' => array('residential-lettings'),
+                    ),
+                    '_currency' => array(
+                        'field_value' => $default_country['currency_code'],
+                    ),
+                    '_deposit' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => '_rent', 'max' => 6000, 'round' => -2),
+                    ),
+                    '_deposit_scheme' => array(
+                        'possible_values' => array( 'dps', 'mydeposits', 'tds', 'lps', 'safedeposits', 'none' ),
+                    ),
+                    '_management_type' => array(
+                        'possible_values' => array( 'let_only', 'fully_managed' ),
+                    ),
+                    '_property_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'property',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_department',
+                                'meta_value' => 'residential-lettings',
+                            ),
+                        ),
+                    ),
+                    '_applicant_contact_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'contact',
+                        'meta_query' => array(
+                            array(
+                                'meta_key' => '_applicant_profile_0',
+                                'meta_value' => 'residential-lettings',
+                                'compare' => 'LIKE',
+                            ),
+                        ),
+                    ),
+                );
+                break;
+            case 'enquiry':
+
+                $data_fields['post'] = array(
+                    'post_type'      => 'enquiry',
+                    'post_title'     => 'Demo Data Enquiry',
+                    'post_content' 	 => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $current_user = wp_get_current_user();
+
+                $data_fields['meta'] = array(
+                    '_status' => array(
+                        'possible_values' => array( 'open', 'closed' ),
+                    ),
+                    '_negotiator_id' => array(
+                        'possible_values' => $this->get_negotiators(),
+                    ),
+                    '_office_id' => array(
+                        'possible_values' => $this->get_offices(),
+                    ),
+                    '_source' => array(
+                        'possible_values' => $this->get_enquiry_sources(),
+                    ),
+                    '_added_manually' => array(
+                        'field_value' => 'yes',
+                    ),
+                    'name' => array(
+                        'field_type' => 'contact_name',
+                    ),
+                    'telephone' => array(
+                        'field_value' => '01234 567890',
+                    ),
+                    'email' => array(
+                        'field_value' => $this->make_email_address_unique($current_user->user_email),
+                    ),
+                    'property_id' => array(
+                        'field_type' => 'post_id',
+                        'post_type' => 'property',
+                    ),
+                );
                 break;
         }
 
@@ -1052,7 +1373,7 @@ final class PH_Demo_Data {
         $negotiators = array();
         $args = array(
             'number' => 9999,
-            'role__not_in' => array('property_hive_contact')
+            'role__not_in' => apply_filters( 'property_negotiator_exclude_roles', array('property_hive_contact', 'subscriber') ),
         );
         $user_query = new WP_User_Query( $args );
 
@@ -1065,6 +1386,39 @@ final class PH_Demo_Data {
         }
 
         return $negotiators;
+    }
+
+    private function get_offices()
+    {
+        $args = array(
+            'fields' => 'ids',
+            'post_type' => 'office',
+            'nopaging' => true
+        );
+        $office_query = new WP_Query($args);
+
+        $office_ids = $office_query->posts;
+
+        $office_query->reset_postdata();
+
+        return $office_ids;
+    }
+
+    private function get_enquiry_sources()
+    {
+        $sources = array(
+            'office' => __( 'Office', 'propertyhive' ),
+            'website' => __( 'Website', 'propertyhive' )
+        );
+
+        $sources = apply_filters( 'propertyhive_enquiry_sources', $sources );
+
+        return array_keys($sources);
+    }
+
+    private function make_email_address_unique( $email_address )
+    {
+        return str_replace( '@', '+' . rand(1, 10000) . '@', $email_address);
     }
 
     public function ajax_create_demo_data_records()
@@ -1162,6 +1516,11 @@ final class PH_Demo_Data {
             'property' => 'Properties',
             'applicant' => 'Applicants',
             'appraisal' => 'Appraisals',
+            'viewing' => 'Viewings',
+            'offer' => 'Offers',
+            'sale' => 'Sales',
+            'tenancy' => 'Tenancies',
+            'enquiry' => 'Enquiries'
         );
 
         foreach ( $data_sections as $section => $heading )
