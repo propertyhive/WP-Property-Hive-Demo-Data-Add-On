@@ -143,7 +143,7 @@ final class PH_Demo_Data {
         die();
     }
 
-    private function build_data_item($fields)
+    private function build_data_item($fields, $id_stored_as = null)
     {
         $data_item = array(
             'post' => $fields['post'],
@@ -153,6 +153,11 @@ final class PH_Demo_Data {
             'taxonomies' => array(),
             'related' => array(),
         );
+
+        if ( !is_null($id_stored_as) )
+        {
+            $data_item['id_stored_as'] = $id_stored_as;
+        }
 
         if ( isset( $data_item['post']['post_title'] ) && $data_item['post']['post_title'] == 'contact_name' )
         {
@@ -209,10 +214,13 @@ final class PH_Demo_Data {
                         switch ( $options['field_type'] )
                         {
                             case 'date':
+                            case 'datetime':
                                 $start_timestamp = strtotime('-2 month', time());
                                 $end_timestamp = strtotime('+2 month', time());
                                 $random_timestamp = rand($start_timestamp, $end_timestamp);
-                                $data_value = date('Y-m-d', $random_timestamp);
+
+                                $date_format = $options['field_type'] == 'date' ? 'Y-m-d' : 'Y-m-d H:i:s';
+                                $data_value = date($date_format, $random_timestamp);
                                 break;
                             case 'integer':
                                 if ( isset( $options['field_bounds'] ) )
@@ -454,7 +462,8 @@ final class PH_Demo_Data {
                 {
                     $related_data_fields = $this->get_section_data_fields( $related['section'] );
 
-                    $related_data_item = $this->build_data_item( $related_data_fields );
+                    $stored_as = isset( $related['stored_as'] ) ? $related['stored_as'] : null;
+                    $related_data_item = $this->build_data_item( $related_data_fields, $stored_as );
 
                     $data_item['related'][$related['meta_key']] = $related_data_item;
                 }
@@ -499,6 +508,7 @@ final class PH_Demo_Data {
                     array(
                         'section' => 'property_owner',
                         'meta_key' => '_owner_contact_id',
+                        'stored_as' => 'array',
                     ),
                 );
 
@@ -569,23 +579,8 @@ final class PH_Demo_Data {
                         'field_value' => $default_country['currency_code'],
                 );
 
-                $negotiators = array();
-                $args = array(
-                    'number' => 9999,
-                    'role__not_in' => array('property_hive_contact') 
-                );
-                $user_query = new WP_User_Query( $args );
-
-                if ( ! empty( $user_query->results ) ) 
-                {
-                    foreach ( $user_query->results as $user ) 
-                    {
-                        $negotiators[] = $user->ID;
-                    }
-                }
-
                 $data_fields['meta']['_negotiator_id'] = array(
-                    'possible_values' => $negotiators,
+                    'possible_values' => $this->get_negotiators(),
                 );
 
                 $args = array(
@@ -920,6 +915,72 @@ final class PH_Demo_Data {
                 );
 
                 break;
+            case 'appraisal':
+
+                $data_fields['post'] = array(
+                    'post_type' => 'appraisal',
+                    'post_content' 	 => '',
+                    'post_status'    => 'publish',
+                    'comment_status' => 'closed',
+                    'ping_status'    => 'closed',
+                );
+
+                $data_fields['related'] = array(
+                    array(
+                        'section' => 'property_owner',
+                        'meta_key' => '_property_owner_contact_id',
+                    ),
+                );
+
+                $data_fields['taxonomy'] = array(
+                    array(
+                        'name' => 'property_type',
+                    ),
+                    array(
+                        'name' => 'parking',
+                    ),
+                    array(
+                        'name' => 'outside_space',
+                    ),
+                );
+
+                $data_fields['meta'] = array(
+                    'property_address' => array(
+                        'field_type' => 'address',
+                    ),
+                    '_address_country' => array(
+                        'field_value' => get_option('propertyhive_default_country', 'GB')
+                    ),
+                    '_bedrooms' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 0, 'max' => 5),
+                    ),
+                    '_bathrooms' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 0, 'max' => 4),
+                    ),
+                    '_reception_rooms' => array(
+                        'field_type' => 'integer',
+                        'field_bounds' => array('min' => 0, 'max' => 3),
+                    ),
+                    '_negotiator_id' => array(
+                        'possible_values' => $this->get_negotiators(),
+                    ),
+                    '_start_date_time' => array(
+                        'field_type' => 'datetime',
+                    ),
+                    '_duration' => array(
+                        'field_value' => 3600,
+                    ),
+                    '_department' => array(
+                        'possible_values' => array( 'residential-sales', 'residential-lettings' ),
+                    ),
+                    '_status' => array(
+                        'possible_values' => array( 'pending', 'cancelled', 'carried_out', 'won', 'lost' ),
+                    ),
+                );
+
+                break;
         }
 
         $data_fields = apply_filters( 'propertyhive_demo_data_' . $section . '_fields', $data_fields );
@@ -986,6 +1047,26 @@ final class PH_Demo_Data {
         return $departments;
     }
 
+    private function get_negotiators()
+    {
+        $negotiators = array();
+        $args = array(
+            'number' => 9999,
+            'role__not_in' => array('property_hive_contact')
+        );
+        $user_query = new WP_User_Query( $args );
+
+        if ( ! empty( $user_query->results ) )
+        {
+            foreach ( $user_query->results as $user )
+            {
+                $negotiators[] = $user->ID;
+            }
+        }
+
+        return $negotiators;
+    }
+
     public function ajax_create_demo_data_records()
     {
         $records_inserted = 0;
@@ -1019,10 +1100,17 @@ final class PH_Demo_Data {
         foreach ( $data_item['related'] as $related_meta_key => $related_item)
         {
             $related_post_id = $this->create_demo_data_record($related_item);
-            update_post_meta( $post_id, $related_meta_key, array( $related_post_id ) );
+            update_post_meta( $post_id, $related_meta_key, $related_post_id );
         }
 
-        return $post_id;
+        if ( isset( $data_item['id_stored_as'] ) && $data_item['id_stored_as'] == 'array' )
+        {
+            return array( $post_id );
+        }
+        else
+        {
+            return $post_id;
+        }
     }
 
     /**
@@ -1070,23 +1158,23 @@ final class PH_Demo_Data {
 
         );
 
-        $settings[] = array(
-            'title'    => __( 'Properties', 'propertyhive' ),
-            'id'       => 'property',
-            'class'    => 'demo_data_section',
-            'type'     => 'checkbox',
-            'value'    => 'yes',
-            'desc'     => '<span id="property_status_span"></span>',
+        $data_sections = array(
+            'property' => 'Properties',
+            'applicant' => 'Applicants',
+            'appraisal' => 'Appraisals',
         );
 
-        $settings[] = array(
-            'title'    => __( 'Applicants', 'propertyhive' ),
-            'id'       => 'applicant',
-            'class'    => 'demo_data_section',
-            'type'     => 'checkbox',
-            'value'    => 'yes',
-            'desc'     => '<span id="applicant_status_span"></span>',
-        );
+        foreach ( $data_sections as $section => $heading )
+        {
+            $settings[] = array(
+                'title'    => __( $heading, 'propertyhive' ),
+                'id'       => $section,
+                'class'    => 'demo_data_section',
+                'type'     => 'checkbox',
+                'value'    => 'yes',
+                'desc'     => '<span id="' . $section . '_status_span"></span>',
+            );
+        }
 
         $settings[] = array( 'type' => 'sectionend', 'id' => 'demo_data_settings');
 
