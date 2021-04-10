@@ -382,14 +382,28 @@ final class PH_Demo_Data {
                                     {
                                         if ( isset($files[$i]) )
                                         {
-                                            $file_path = $files[$i];
-                                            $file_array = array(
-                                                'name' => basename( $file_path ),
-                                                'tmp_name' => $file_path,
-                                                'error' => 0,
-                                            );
-                                            $media_id = media_handle_sideload( $file_array );
-                                            $media_ids[] = $media_id;
+                                            $upload = wp_upload_bits( $files[$i], null, file_get_contents($files[$i]) );
+
+                                            if( !isset($upload['error']) || $upload['error'] === FALSE )
+                                            {
+                                                // We don't already have a thumbnail and we're presented with an image
+                                                $wp_filetype = wp_check_filetype( $upload['file'], null );
+
+                                                $attachment = array(
+                                                    'post_mime_type' => $wp_filetype['type'],
+                                                    'post_content' => '',
+                                                    'post_status' => 'inherit'
+                                                );
+                                                $attach_id = wp_insert_attachment( $attachment, $upload['file'] );
+
+                                                if ( !empty($attach_id) )
+                                                {
+                                                    $attach_data = wp_generate_attachment_metadata( $attach_id, $upload['file'] );
+                                                    wp_update_attachment_metadata( $attach_id,  $attach_data );
+
+                                                    $media_ids[] = $attach_id;
+                                                }
+                                            }
                                         }
                                     }
 
@@ -397,6 +411,7 @@ final class PH_Demo_Data {
                                     {
                                         $data_item['meta_fields'][$meta_key] = $media_ids;
                                     }
+                                }
                                 break;
                             case 'post_id':
 
