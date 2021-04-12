@@ -1495,9 +1495,6 @@ final class PH_Demo_Data {
 
     /**
      * Uses the Property Hive admin fields API to output settings.
-     *
-     * @uses propertyhive_admin_fields()
-     * @uses self::get_settings()
      */
     public function output() {
 
@@ -1505,54 +1502,15 @@ final class PH_Demo_Data {
 
         $hide_save_button = true;
 
-        propertyhive_admin_fields( self::get_demo_data_settings() );
-
         ?>
+            <h3>Demo Data Options</h3>
             <p class="submit">
                 <input id="generate-demo-data" class="button-primary" type="button" value="Generate Data" />
             </p>
+            <div id="demo_data_property_results"></div>
+            <div id="demo_data_applicant_results"></div>
+            <div id="demo_data_other_results"></div>
         <?php
-    }
-
-    /**
-     * Get demo data settings
-     *
-     * @return array Array of settings
-     */
-    public function get_demo_data_settings() {
-
-        $settings = array(
-
-            array( 'title' => __( 'Demo Data Options', 'propertyhive' ), 'type' => 'title', 'desc' => '', 'id' => 'demo_data_settings' )
-
-        );
-
-        $data_sections = array(
-            'property' => 'Properties',
-            'applicant' => 'Applicants',
-            'appraisal' => 'Appraisals',
-            'viewing' => 'Viewings',
-            'offer' => 'Offers',
-            'sale' => 'Sales',
-            'tenancy' => 'Tenancies',
-            'enquiry' => 'Enquiries'
-        );
-
-        foreach ( $data_sections as $section => $heading )
-        {
-            $settings[] = array(
-                'title'    => __( $heading, 'propertyhive' ),
-                'id'       => $section,
-                'class'    => 'demo_data_section',
-                'type'     => 'checkbox',
-                'value'    => 'yes',
-                'desc'     => '<span id="' . $section . '_status_span"></span>',
-            );
-        }
-
-        $settings[] = array( 'type' => 'sectionend', 'id' => 'demo_data_settings');
-
-        return $settings;
     }
 }
 
