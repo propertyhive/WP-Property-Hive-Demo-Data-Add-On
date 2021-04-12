@@ -206,7 +206,7 @@ final class PH_Demo_Data {
                     }
                     elseif ( isset( $options['possible_values'] ) )
                     {
-                        $rand = rand(0, count($options['possible_values'])-1);
+                        $rand = array_rand($options['possible_values']);
                         $data_value = $options['possible_values'][$rand];
                     }
                     elseif ( isset( $options['field_type'] ) )
@@ -221,6 +221,9 @@ final class PH_Demo_Data {
                                 $start_timestamp = strtotime('-2 month', time());
                                 $end_timestamp = strtotime('+2 month', time());
                                 $random_timestamp = rand($start_timestamp, $end_timestamp);
+
+                                // Round timestamp down to nearest half hour
+                                $random_timestamp = $random_timestamp - ($random_timestamp % 1800);
 
                                 $date_format = $options['field_type'] == 'date' ? 'Y-m-d' : 'Y-m-d H:i:s';
                                 $data_value = date($date_format, $random_timestamp);
