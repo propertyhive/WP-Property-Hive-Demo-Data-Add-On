@@ -1585,6 +1585,7 @@ final class PH_Demo_Data {
 
         ?>
             <h3>Demo Data Options</h3>
+            <p>Clicking the button below will generate <?php echo PH_Demo_Data::NUM_DEMO_DATA_ITEMS; ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
         <?php
 
         if ( $current_section )
