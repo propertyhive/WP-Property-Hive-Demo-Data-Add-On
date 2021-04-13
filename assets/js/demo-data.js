@@ -30,7 +30,7 @@ jQuery( function($){
                     {
                         plural = '';
                     }
-                    $("#" + section + "_demo_data_status").text("Done!");
+                    $("#" + section + "_demo_data_status").text(response + " record" + plural + " created");
                     sections_done.push(section);
                 });
             }, 'json');
@@ -43,12 +43,10 @@ jQuery( function($){
     {
         if ( sections_done.includes( 'applicant' ) && sections_done.includes( 'property' ) )
         {
-            console.log("apps and props done");
             create_second_data_set();
         }
         else
         {
-            console.log("apps and props not done yet");
             setTimeout(function() {
                 waitForElement(sections_done);
             }, 1000);
@@ -84,7 +82,7 @@ jQuery( function($){
                     {
                         plural = '';
                     }
-                    $("#" + section + "_demo_data_status").text("Done!");
+                    $("#" + section + "_demo_data_status").text(response + " record" + plural + " created");
                 });
             }, 'json');
         });
