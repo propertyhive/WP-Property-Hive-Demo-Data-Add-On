@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Property Hive Demo Data Add On
- * Plugin Uri: http://wp-property-hive.com/addons/property-portal-demo-data/
+ * Plugin Uri: http://wp-property-hive.com/addons/demo-data/
  * Description: Add On for Property Hive allowing sets of test data to be automatically generated
- * Version: 1.1.27
+ * Version: 1.0.0
  * Author: PropertyHive
  * Author URI: http://wp-property-hive.com
  */

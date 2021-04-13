@@ -3,7 +3,7 @@
 /*
 *  propertyhive_demo_data_update
 *
-*  this class will connect with and download updates from the PropertyHive website
+*  this class will connect with and download updates from the Property Hive website
 *
 *  @type	class
 *  @date	10/11/16
@@ -28,23 +28,14 @@ class propertyhive_demo_data_update
         // vars
         $this->settings = array(
             'version'	=>	'',
-            'remote'	=>	'http://wp-property-hive.com/add-on-store/',
+            'remote'	=>	'http://wp-property-hive.com/add-on-store/propertyhive-demo-data-y7sveb4yh/update-info.php',
             'basename'	=>	plugin_basename( str_replace('-update.php', '.php', __FILE__) ),
             'slug'		=>	dirname( plugin_basename( str_replace('-update.php', '.php', __FILE__) ) )
         );
-        
-        $license = get_option( 'propertyhive_license_key_details', array() );
 
-        if ( !is_array( $license ) ) { $license = array(); }
-
-        if ( isset($license['active']) && $license['active'] == '1' && isset($license['expires_at']) && $license['expires_at'] != '' && strtotime($license['expires_at']) > time() )
-        {
-            // Active and current license
-
-            // filters
-            add_filter('pre_set_site_transient_update_plugins', array($this, 'check_update'));
-            add_filter('plugins_api', array($this, 'check_info'), 10, 3);
-        }
+        // filters
+        add_filter('pre_set_site_transient_update_plugins', array($this, 'check_update'));
+        add_filter('plugins_api', array($this, 'check_info'), 10, 3);
     }
     
     
