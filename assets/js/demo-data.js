@@ -1,5 +1,31 @@
 jQuery( function($){
 
+    $( "#delete-demo-data" ).click(function() {
+
+        var confirm_box = confirm('Are you sure you wish to delete all demo data?');
+        if (!confirm_box)
+        {
+            return false;
+        }
+
+        var demo_data_sections = ['contact', 'property', 'appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry'];
+
+        $.each(demo_data_sections, function( key, section ) {
+
+            $("#delete_demo_data_results").append("<span id=\"" + section + "_delete_demo_data_status\">Deleting " + section + " records...</span><br>");
+
+            var data = {
+                action:  'propertyhive_delete_demo_data',
+                section: section,
+            };
+            jQuery.post( ph_demo_data.ajax_url, data, function(response)
+            {
+                $("#" + section + "_delete_demo_data_status").text("All " + response + " demo " + section + " records deleted");
+            });
+        });
+
+    });
+
     $( "#generate-demo-data" ).click(function() {
 
         var first_sections = ['applicant', 'property'];

@@ -65,11 +65,48 @@ final class PH_Demo_Data {
 
         add_filter( 'propertyhive_settings_tabs_array', array( $this, 'add_settings_tab' ), 19 );
         add_action( 'propertyhive_settings_' . $this->id, array( $this, 'output' ) );
+        add_action( 'propertyhive_sections_' . $this->id, array( $this, 'output_sections' ) );
 
         add_action( 'wp_ajax_propertyhive_get_section_demo_data', array( $this, 'ajax_get_section_demo_data' ) );
         add_action( 'wp_ajax_propertyhive_create_demo_data_records', array( $this, 'ajax_create_demo_data_records' ) );
+        add_action( 'wp_ajax_propertyhive_delete_demo_data', array( $this, 'ajax_delete_demo_data' ) );
 
         add_filter( "plugin_action_links_" . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );
+    }
+
+    /**
+     * Get sections
+     *
+     * @return array
+     */
+    public function get_sections() {
+        $sections = array(
+            ''       => __( 'Create Data', 'propertyhive' ),
+            'delete' => __( 'Delete Data', 'propertyhive' ),
+        );
+
+        return $sections;
+    }
+
+    /**
+     * Output sections
+     */
+    public function output_sections() {
+        global $current_section;
+
+        $sections = $this->get_sections();
+
+        if ( empty( $sections ) )
+            return;
+
+        echo '<ul class="subsubsub">';
+
+        $array_keys = array_keys( $sections );
+
+        foreach ( $sections as $id => $label )
+            echo '<li><a href="' . admin_url( 'admin.php?page=ph-settings&tab=' . $this->id . '&section=' . sanitize_title( $id ) ) . '" class="' . ( $current_section == $id ? 'current' : '' ) . '">' . $label . '</a> ' . ( end( $array_keys ) == $id ? '' : '|' ) . ' </li>';
+
+        echo '</ul><br class="clear" />';
     }
 
     public function plugin_add_settings_link( $links )
@@ -1485,6 +1522,47 @@ final class PH_Demo_Data {
         }
     }
 
+    public function ajax_delete_demo_data()
+    {
+        $records_deleted = 0;
+        if ( isset( $_POST['section'] ) )
+        {
+            $records_deleted = $this->delete_demo_data($_POST['section']);
+        }
+
+        echo $records_deleted;
+        die();
+    }
+
+    private function delete_demo_data( $section )
+    {
+        $posts_deleted = 0;
+
+        $args = array(
+            'fields'         => 'ids',
+            'post_type'      => $section,
+            'posts_per_page' => '-1',
+            'meta_query'     => array(
+                array(
+                    'key' => '_demo_data',
+                    'value' => 'yes',
+                )
+            )
+        );
+        $query = new WP_Query( $args );
+
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                wp_delete_post(get_the_ID(), true);
+                ++$posts_deleted;
+            }
+        }
+        wp_reset_postdata();
+
+        return $posts_deleted;
+    }
+
     /**
      * Add a new settings tab to the Property Hive settings tabs array.
      *
@@ -1501,19 +1579,42 @@ final class PH_Demo_Data {
      */
     public function output() {
 
-        global $hide_save_button;
+        global $current_section, $hide_save_button;
 
         $hide_save_button = true;
 
         ?>
             <h3>Demo Data Options</h3>
-            <p class="submit">
-                <input id="generate-demo-data" class="button-primary" type="button" value="Generate Data" />
-            </p>
-            <div id="demo_data_property_results"></div>
-            <div id="demo_data_applicant_results"></div>
-            <div id="demo_data_other_results"></div>
         <?php
+
+        if ( $current_section )
+        {
+            switch ($current_section)
+            {
+                case "delete":
+                {
+                    ?>
+                        <p class="submit">
+                            <input id="delete-demo-data" class="button-primary" type="button" value="Delete Data" />
+                        </p>
+                        <div id="delete_demo_data_results"></div>
+                    <?php
+                    break;
+                }
+                default: { die("Unknown setting section"); }
+            }
+        }
+        else
+        {
+            ?>
+                <p class="submit">
+                    <input id="generate-demo-data" class="button-primary" type="button" value="Generate Data" />
+                </p>
+                <div id="demo_data_property_results"></div>
+                <div id="demo_data_applicant_results"></div>
+                <div id="demo_data_other_results"></div>
+            <?php
+        }
     }
 }
 
