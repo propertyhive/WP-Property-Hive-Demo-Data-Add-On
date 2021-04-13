@@ -81,7 +81,7 @@ final class PH_Demo_Data {
      */
     public function get_sections() {
         $sections = array(
-            ''       => __( 'Create Data', 'propertyhive' ),
+            ''       => __( 'Generate Data', 'propertyhive' ),
             'delete' => __( 'Delete Data', 'propertyhive' ),
         );
 
@@ -1592,11 +1592,6 @@ final class PH_Demo_Data {
 
         $hide_save_button = true;
 
-        ?>
-            <h3>Demo Data Options</h3>
-            <p>Clicking the button below will generate <?php echo PH_Demo_Data::NUM_DEMO_DATA_ITEMS; ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
-        <?php
-
         if ( $current_section )
         {
             switch ($current_section)
@@ -1604,6 +1599,11 @@ final class PH_Demo_Data {
                 case "delete":
                 {
                     ?>
+                        <h3>Delete Demo Data</h3>
+                        <p>Clicking the button below will delete any demo data previously generated using this add on. Data added manually or via another source will remain untouched.
+                            <br><br>
+                        <strong>NOTE: This action is irreversible and any records deleted will be permanently trashed.</strong></p>
+
                         <p class="submit">
                             <input id="delete-demo-data" class="button-primary" type="button" value="Delete Data" />
                         </p>
@@ -1624,8 +1624,11 @@ final class PH_Demo_Data {
         else
         {
             ?>
+                <h3>Generate Demo Data</h3>
+                <p>Clicking the button below will generate <?php echo PH_Demo_Data::NUM_DEMO_DATA_ITEMS; ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
+
                 <p class="submit">
-                    <input id="generate-demo-data" class="button-primary" type="button" value="Generate Data" />
+                    <input id="generate-demo-data" class="button-primary" type="button" value="Generate Demo Data" />
                 </p>
                 <div id="demo_data_property_results"></div>
                 <div id="demo_data_applicant_results"></div>

@@ -1,3 +1,5 @@
+var ph_generating_demo_data = false;
+
 jQuery( function($){
 
     $( "#delete-demo-data" ).click(function() {
@@ -31,6 +33,18 @@ jQuery( function($){
 
     $( "#generate-demo-data" ).click(function() {
 
+        if ( ph_generating_demo_data )
+        {
+            return false;
+        }
+
+        ph_generating_demo_data = true;
+        $( "#generate-demo-data" ).val('Generating...');
+
+        $("#demo_data_property_results").html('');
+        $("#demo_data_applicant_results").html('');
+        $("#demo_data_other_results").html('');
+
         var first_sections = ['applicant', 'property'];
         var sections_done = [];
 
@@ -38,7 +52,7 @@ jQuery( function($){
 
             var capitalizedSection = section.charAt(0).toUpperCase() + section.slice(1);
 
-            $("#demo_data_" + section + "_results").append(capitalizedSection + " : <span id=\"" + section + "_demo_data_status\">Getting data</span>");
+            $("#demo_data_" + section + "_results").append(capitalizedSection + " : <span id=\"" + section + "_demo_data_status\">Generating data</span>");
 
             var data = {
                 action:  'propertyhive_get_section_demo_data',
@@ -115,6 +129,9 @@ jQuery( function($){
                         plural = '';
                     }
                     $("#" + section + "_demo_data_status").text(response + " record" + plural + " created");
+
+                    ph_generating_demo_data = false;
+                    $( "#generate-demo-data" ).val('Generate Demo Data');
                 });
             }, 'json');
         });
