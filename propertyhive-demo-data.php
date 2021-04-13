@@ -1496,20 +1496,29 @@ final class PH_Demo_Data {
     {
         $post_id = wp_insert_post( $data_item['post'], true );
 
-        foreach( $data_item['meta_fields'] as $meta_key => $meta_value)
+        if ( isset($data_item['meta_fields']) && !empty($data_item['meta_fields']) )
         {
-            update_post_meta( $post_id, $meta_key, $meta_value );
+            foreach( $data_item['meta_fields'] as $meta_key => $meta_value)
+            {
+                update_post_meta( $post_id, $meta_key, $meta_value );
+            }
         }
 
-        foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
+        if ( isset($data_item['taxonomies']) && !empty($data_item['taxonomies']) )
         {
-            wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
+            foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
+            {
+                wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
+            }
         }
 
-        foreach ( $data_item['related'] as $related_meta_key => $related_item)
+        if ( isset($data_item['related']) && !empty($data_item['related']) )
         {
-            $related_post_id = $this->create_demo_data_record($related_item);
-            update_post_meta( $post_id, $related_meta_key, $related_post_id );
+            foreach ( $data_item['related'] as $related_meta_key => $related_item)
+            {
+                $related_post_id = $this->create_demo_data_record($related_item);
+                update_post_meta( $post_id, $related_meta_key, $related_post_id );
+            }
         }
 
         if ( isset( $data_item['id_stored_as'] ) && $data_item['id_stored_as'] == 'array' )
