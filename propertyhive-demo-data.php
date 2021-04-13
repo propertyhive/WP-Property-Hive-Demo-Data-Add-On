@@ -15,9 +15,9 @@ if ( ! class_exists( 'PH_Demo_Data' ) ) :
 final class PH_Demo_Data {
 
     const YES_OR_BLANK = array('', 'yes');
-    const NUM_DEMO_DATA_ITEMS = 3;
+    const NUM_DEMO_DATA_ITEMS = 10;
     const NUM_FEATURES = 6;
-    const NUM_PROPERTY_PHOTOS = 3;
+    const NUM_PROPERTY_PHOTOS = 1;
 
     /**
      * @var string
