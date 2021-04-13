@@ -63,7 +63,7 @@ final class PH_Demo_Data {
         add_action( 'admin_notices', array( $this, 'demo_data_error_notices') );
         add_action( 'admin_enqueue_scripts', array( $this, 'load_demo_data_admin_scripts' ) );
 
-        add_filter( 'propertyhive_settings_tabs_array', array( $this, 'add_settings_tab' ), 19 );
+        add_filter( 'propertyhive_settings_tabs_array', array( $this, 'add_settings_tab' ), 25 );
         add_action( 'propertyhive_settings_' . $this->id, array( $this, 'output' ) );
         add_action( 'propertyhive_sections_' . $this->id, array( $this, 'output_sections' ) );
 
