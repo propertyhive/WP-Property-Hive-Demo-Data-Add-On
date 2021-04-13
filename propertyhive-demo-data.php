@@ -424,7 +424,7 @@ final class PH_Demo_Data {
                                         {
                                             $upload = wp_upload_bits( $files[$i], null, file_get_contents($files[$i]) );
 
-                                            if( !isset($upload['error']) || $upload['error'] === FALSE )
+                                            if ( !isset($upload['error']) || $upload['error'] === FALSE )
                                             {
                                                 // We don't already have a thumbnail and we're presented with an image
                                                 $wp_filetype = wp_check_filetype( $upload['file'], null );
@@ -1599,6 +1599,13 @@ final class PH_Demo_Data {
                         </p>
                         <div id="delete_demo_data_results"></div>
                     <?php
+                    $sections_to_delete = array('contact', 'property', 'appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry');
+                    $sections_to_delete = apply_filters( 'propertyhive_demo_data_sections_to_delete', $sections_to_delete );
+
+                    foreach ( $sections_to_delete as $section )
+                    {
+                        echo '<input type="hidden" name="sections_to_delete[]" value="' . $section . '">';
+                    }
                     break;
                 }
                 default: { die("Unknown setting section"); }
@@ -1614,6 +1621,14 @@ final class PH_Demo_Data {
                 <div id="demo_data_applicant_results"></div>
                 <div id="demo_data_other_results"></div>
             <?php
+
+                $demo_data_sub_sections = array('appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry');
+                $demo_data_sub_sections = apply_filters( 'propertyhive_demo_data_sub_sections', $demo_data_sub_sections );
+
+                foreach ( $demo_data_sub_sections as $sub_section )
+                {
+                    echo '<input type="hidden" name="sub_sections[]" value="' . $sub_section . '">';
+                }
         }
     }
 }

@@ -8,9 +8,12 @@ jQuery( function($){
             return false;
         }
 
-        var demo_data_sections = ['contact', 'property', 'appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry'];
+        var sections_to_delete = [];
+        $('input[name="sections_to_delete[]"]').each(function() {
+            sections_to_delete.push($(this).val());
+        });
 
-        $.each(demo_data_sections, function( key, section ) {
+        $.each(sections_to_delete, function( key, section ) {
 
             $("#delete_demo_data_results").append("<span id=\"" + section + "_delete_demo_data_status\">Deleting " + section + " records...</span><br>");
 
@@ -81,7 +84,10 @@ jQuery( function($){
 
     function create_second_data_set( )
     {
-        var second_sections = ['appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry'];
+        var second_sections = [];
+        $('input[name="sub_sections[]"]').each(function() {
+            second_sections.push($(this).val());
+        });
 
         $.each(second_sections, function( key, section ) {
 
