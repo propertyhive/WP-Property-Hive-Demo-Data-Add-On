@@ -1521,6 +1521,12 @@ final class PH_Demo_Data {
             }
         }
 
+        if ( $data_item['post']['post_type'] == 'property' )
+        {
+            $ph_countries = new PH_Countries();
+            $ph_countries->update_property_price_actual( $post_id );
+        }
+
         if ( isset( $data_item['id_stored_as'] ) && $data_item['id_stored_as'] == 'array' )
         {
             return array( $post_id );
