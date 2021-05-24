@@ -1274,8 +1274,6 @@ final class PH_Demo_Data {
                     ),
                     '_rent_frequency' => array(
                         'possible_values' => array('pw', 'pcm', 'pq', 'pa'),
-                        'dependent_field' => '_department',
-                        'dependent_values' => array('residential-lettings'),
                     ),
                     '_currency' => array(
                         'field_value' => $default_country['currency_code'],
