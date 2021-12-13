@@ -1100,7 +1100,7 @@ final class PH_Demo_Data {
                         'possible_values' => $this->get_negotiators(),
                     ),
                     '_status' => array(
-                        'possible_values' => array( 'pending', 'cancelled', 'carried_out' ),
+                        'possible_values' => array( 'pending', 'cancelled', 'carried_out', 'no_show' ),
                     ),
                     '_feedback_status' => array(
                         'possible_values' => array( 'not_required', 'interested', 'not_interested' ),
