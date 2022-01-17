@@ -555,6 +555,20 @@ final class PH_Demo_Data {
                         'parent' => 0
                     );
                     $terms = get_terms( $taxonomy['name'], $args );
+
+                    // If we're adding an availability and the item has a department, make sure we add one related to that department
+                    if ( $taxonomy['name'] == 'availability' && isset($data_item['meta_fields']['_department']) )
+                    {
+                        $availability_departments = get_option( 'propertyhive_availability_departments', array() );
+                        if ( !is_array($availability_departments) ) { $availability_departments = array(); }
+
+                        if ( !empty($availability_departments) )
+                        {
+                            $department_availabilites = array_keys( array_filter( $availability_departments, function( $a ) use ( $data_item ) { return in_array( $data_item['meta_fields']['_department'], $a ); } ) );
+                            $terms = array_filter( $terms, function( $term ) use( $department_availabilites ) { return in_array( $term->term_id, $department_availabilites ); } );
+                        }
+                    }
+
                     if ( !empty( $terms ) && !is_wp_error( $terms ) )
                     {
                         $rand = rand(0, count($terms)-1);
