@@ -565,7 +565,9 @@ final class PH_Demo_Data {
                         if ( !empty($availability_departments) )
                         {
                             $department_availabilites = array_keys( array_filter( $availability_departments, function( $a ) use ( $data_item ) { return in_array( $data_item['meta_fields']['_department'], $a ); } ) );
+
                             $terms = array_filter( $terms, function( $term ) use( $department_availabilites ) { return in_array( $term->term_id, $department_availabilites ); } );
+                            $terms = array_values($terms);
                         }
                     }
 
