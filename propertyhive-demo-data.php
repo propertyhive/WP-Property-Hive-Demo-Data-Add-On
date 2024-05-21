@@ -623,8 +623,39 @@ final class PH_Demo_Data {
 
     private function generate_lorem_ipsum( $num_paragraphs = 1, $length = 'short' )
     {
-        $text = file_get_contents('http://loripsum.net/api/plaintext/' . $num_paragraphs . '/' . $length);
-        return $text;
+        // Predefined Lorem Ipsum paragraphs (short and medium)
+        $short_paragraphs = [
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+            "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+            "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+            "Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra.",
+            "Etiam a tortor quis justo posuere placerat. Duis venenatis nulla in diam. Sed arcu. Cras consequat.",
+            "Nulla imperdiet sit amet magna. Vestibulum dapibus, mauris nec malesuada fames ac turpis velit.",
+            "Morbi in sem quis dui placerat ornare. Pellentesque odio nisi, euismod in, pharetra a, ultricies in, diam.",
+            "Sed arcu. Cras consequat. Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue.",
+            "Aenean ultricies mi vitae est. Mauris placerat eleifend leo. Quisque sit amet est et sapien ullamcorper pharetra."
+        ];
+
+        $medium_paragraphs = [
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+            "Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra. Etiam a tortor quis justo posuere placerat. Duis venenatis nulla in diam. Sed arcu. Cras consequat. Nulla imperdiet sit amet magna. Vestibulum dapibus, mauris nec malesuada fames ac turpis velit. Morbi in sem quis dui placerat ornare. Pellentesque odio nisi, euismod in, pharetra a, ultricies in, diam. Sed arcu. Cras consequat. Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue.",
+            "Aenean ultricies mi vitae est. Mauris placerat eleifend leo. Quisque sit amet est et sapien ullamcorper pharetra. Vestibulum erat wisi, condimentum sed, commodo vitae, ornare sit amet, wisi. Aenean fermentum, elit eget tincidunt condimentum, eros ipsum rutrum orci, sagittis tempus lacus enim ac dui. Donec non enim in turpis pulvinar facilisis. Ut felis. Praesent dapibus, neque id cursus faucibus, tortor neque egestas augue, eu vulputate magna eros eu erat. Aliquam erat volutpat. Nam dui mi, tincidunt quis, accumsan porttitor, facilisis luctus, metus."
+        ];
+
+        // Choose the appropriate set of paragraphs based on the length
+        $paragraphs = ($length === 'medium') ? $medium_paragraphs : $short_paragraphs;
+
+        // Shuffle the array to ensure randomness
+        shuffle($paragraphs);
+
+        // Get the requested number of paragraphs
+        $selected_paragraphs = array_slice($paragraphs, 0, $num_paragraphs);
+
+        // Join paragraphs with double line breaks
+        $lorem_ipsum = implode("\n\n", $selected_paragraphs);
+
+        return $lorem_ipsum;
     }
 
     private function generate_contact_name()
