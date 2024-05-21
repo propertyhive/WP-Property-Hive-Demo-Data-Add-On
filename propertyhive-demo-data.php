@@ -30,6 +30,16 @@ final class PH_Demo_Data {
     protected static $_instance = null;
 
     /**
+     * @var string
+     */
+    public $id = '';
+
+    /**
+     * @var string
+     */
+    public $label = '';
+    
+    /**
      * Main Property Hive Demo Data Instance
      *
      * Ensures only one instance of Property Hive Demo Data is loaded or can be loaded.
