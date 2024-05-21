@@ -1771,7 +1771,9 @@ final class PH_Demo_Data {
 
                 <h1>Generate Demo Data</h1>
                 
-                <p style="font-size:1.2em">Clicking the button below will generate <?php echo $this->get_num_demo_data_items(); ?> pieces of randomly-generated demo data in each area of Property Hive for you to use within the system.</p>
+                <p style="font-size:1.2em"><?php
+                    echo sprintf(__('Clicking the button below will generate %s pieces of randomly-generated demo data in each area of Property Hive for you to use within the system.', 'propertyhive'), $this->get_num_demo_data_items());
+                ?></p>
                 
                 <p style="margin-bottom:30px;"><em>When you are finished with the data, it can be deleted by using the '<a href="<?php echo esc_url(admin_url('admin.php?page=ph-settings&tab=demo_data&section=delete')); ?>">Delete Data</a>' option above.</em></p>
                 
