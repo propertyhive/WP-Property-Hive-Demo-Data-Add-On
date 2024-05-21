@@ -4,7 +4,7 @@ Tags: propertyhive, property hive, property, real estate, software, estate agent
 Requires at least: 3.8
 Tested up to: 6.5.3
 Stable tag: trunk
-Version: 1.0.3
+Version: 2.0.0
 Homepage: https://wp-property-hive.com/addons/demo-data/
 
 This add on for Property Hive adds the ability to create and remove a set of demo data
@@ -24,6 +24,15 @@ The manual installation method involves downloading the Property Hive Demo Data 
 Updating should work like a charm; as always though, ensure you backup your site just in case.
 
 == Changelog ==
+
+= 2.0.0 =
+* Overhaul UI
+* Added filters allowing customisation of number of records, property features and photos
+* Optimisation to creationg script only querying negs and offices once
+* Remove dependency on lipsum API and build own
+* Prevent delete button being clicked twice
+* Better AJAX request error handling
+* Declared support for WordPress 6.5.3
 
 = 1.0.3 =
 * Ensure property availabilities set are relevant to department of the property in question
