@@ -35,7 +35,17 @@ final class PH_Demo_Data {
      * @var string
      */
     public $label = '';
-    
+
+    /**
+     * @var array
+     */
+    private $offices = array();
+
+    /**
+     * @var array
+     */
+    private $negotiators = array();
+
     /**
      * Main Property Hive Demo Data Instance
      *
@@ -126,7 +136,7 @@ final class PH_Demo_Data {
         $array_keys = array_keys( $sections );
 
         foreach ( $sections as $id => $label )
-            echo '<li><a href="' . admin_url( 'admin.php?page=ph-settings&tab=' . $this->id . '&section=' . sanitize_title( $id ) ) . '" class="' . ( $current_section == $id ? 'current' : '' ) . '">' . $label . '</a> ' . ( end( $array_keys ) == $id ? '' : '|' ) . ' </li>';
+            echo '<li><a href="' . admin_url( 'admin.php?page=ph-settings&tab=' . $this->id . '&section=' . sanitize_title( $id ) ) . '" class="' . ( $current_section == $id ? 'current' : '' ) . '">' . $label . '</a> ' . ( end( $array_keys ) == $id ? '' : '|&nbsp; ' ) . ' </li>';
 
         echo '</ul><br class="clear" />';
     }
@@ -190,10 +200,16 @@ final class PH_Demo_Data {
 
         if ( isset( $_POST['section'] ) )
         {
-            $data_fields = $this->get_section_data_fields($_POST['section']);
+            $sections = ph_clean($_POST['section']);
+            if ( !is_array($sections) ) { $sections = array($sections); }
 
-            for ($x = 1; $x <= $this->get_num_demo_data_items(); ++$x) {
-                $data_items[] = $this->build_data_item($data_fields);
+            foreach ( $sections as $section )
+            {
+                $data_fields = $this->get_section_data_fields($section);
+
+                for ($x = 1; $x <= $this->get_num_demo_data_items(); ++$x) {
+                    $data_items[] = $this->build_data_item($data_fields);
+                }
             }
         }
 
@@ -1492,6 +1508,11 @@ final class PH_Demo_Data {
 
     private function get_negotiators()
     {
+        if ( isset($this->negotiators) && !empty($this->negotiators) )
+        {
+            return $this->negotiators;
+        }
+
         $negotiators = array();
         $args = array(
             'number' => 9999,
@@ -1507,11 +1528,18 @@ final class PH_Demo_Data {
             }
         }
 
+        $this->negotiators = $negotiators;
+
         return $negotiators;
     }
 
     private function get_offices()
     {
+        if ( isset($this->offices) && !empty($this->offices) )
+        {
+            return $this->offices;
+        }
+
         $args = array(
             'fields' => 'ids',
             'post_type' => 'office',
@@ -1520,6 +1548,8 @@ final class PH_Demo_Data {
         $office_query = new WP_Query($args);
 
         $office_ids = $office_query->posts;
+
+        $this->offices = $office_ids;
 
         $office_query->reset_postdata();
 
@@ -1545,17 +1575,19 @@ final class PH_Demo_Data {
 
     public function ajax_create_demo_data_records()
     {
-        $records_inserted = 0;
+        $records_inserted = array();
         if ( isset( $_POST['data_items'] ) && is_array( $_POST['data_items'] ) )
         {
             foreach( $_POST['data_items'] as $data_item )
             {
                 $post_id = $this->create_demo_data_record($data_item);
-                ++$records_inserted;
+                if ( !isset($records_inserted[$data_item['post']['post_type']]) ) { $records_inserted[$data_item['post']['post_type']] = 0; }
+                ++$records_inserted[$data_item['post']['post_type']];
             }
         }
 
-        echo $records_inserted;
+        header( 'Content-Type: application/json; charset=utf-8' );
+        echo json_encode($records_inserted);
         die();
     }
 
@@ -1697,15 +1729,62 @@ final class PH_Demo_Data {
         else
         {
             ?>
-                <h3>Generate Demo Data</h3>
-                <p>Clicking the button below will generate <?php echo $this->get_num_demo_data_items(); ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
+            <style type="text/css">
+                .ph-dd-progress-bar { margin-top:30px; width:100%; height:25px; position:relative; background-color: #d0d0d0; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); }
+                .ph-dd-progress-bar .bar { background-color:#008473; transition: width 0.15s ease-in-out; position:absolute; height:100%; left:0; top:0; width:0%; }
 
-                <p class="submit">
-                    <input id="generate-demo-data" class="button-primary" type="button" value="Generate Demo Data" />
-                </p>
-                <div id="demo_data_property_results"></div>
-                <div id="demo_data_applicant_results"></div>
-                <div id="demo_data_other_results"></div>
+                .ph-dd-progress-bar .message {
+                    position: absolute;
+                    animation: phDDflyUp 2s ease-in-out forwards;
+                    font-size: 14px;
+                    font-weight:500;
+                    left:0;
+                    white-space: nowrap;
+                }
+                .ph-dd-progress-bar .message.down {
+                    animation: phDDflyDown 2s ease-in-out forwards;
+                }
+
+                @keyframes phDDflyUp {
+                    0% {
+                        opacity: 1;
+                        transform: translateY(-20px);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translateY(-70px);
+                    }
+                }
+
+                @keyframes phDDflyDown {
+                    0% {
+                        opacity: 1;
+                        transform: translateY(25px);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translateY(75px);
+                    }
+                }
+            </style>
+            <div style="max-width:630px; margin:30px auto 0; border:3px dashed #CCC; text-align:center; padding:40px 30px;">
+
+                <h1>Generate Demo Data</h1>
+                
+                <p style="font-size:1.2em">Clicking the button below will generate <?php echo $this->get_num_demo_data_items(); ?> pieces of randomly-generated demo data in each area of Property Hive for you to use within the system.</p>
+                
+                <p style="margin-bottom:30px;"><em>When you are finished with the data, it can be deleted by using the '<a href="<?php echo esc_url(admin_url('admin.php?page=ph-settings&tab=demo_data&section=delete')); ?>">Delete Data</a>' option above.</em></p>
+                
+                <input id="generate-demo-data" class="button button-primary button-hero" type="button" value="Generate Demo Data" />
+                
+                <div class="ph-dd-progress-bar" id="ph-dd-progress-bar"><div class="bar"></div></div>
+
+            </div>
+
+            <?php /*<div id="demo_data_property_results"></div>
+            <div id="demo_data_applicant_results"></div>
+            <div id="demo_data_other_results"></div>*/ ?>
+
             <?php
 
                 $demo_data_sub_sections = array('appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry');
