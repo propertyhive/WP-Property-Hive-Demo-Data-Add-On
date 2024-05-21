@@ -2,7 +2,7 @@
 Contributors: PropertyHive,BIOSTALL
 Tags: propertyhive, property hive, property, real estate, software, estate agents, estate agent, demo data
 Requires at least: 3.8
-Tested up to: 5.8.3
+Tested up to: 6.5.3
 Stable tag: trunk
 Version: 1.0.3
 Homepage: http://wp-property-hive.com/addons/demo-data/
