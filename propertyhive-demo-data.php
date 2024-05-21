@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Property Hive Demo Data Add On
- * Plugin Uri: http://wp-property-hive.com/addons/demo-data/
+ * Plugin Uri: https://wp-property-hive.com/addons/demo-data/
  * Description: Add On for Property Hive allowing sets of test data to be automatically generated
  * Version: 1.0.3
  * Author: PropertyHive
- * Author URI: http://wp-property-hive.com
+ * Author URI: https://wp-property-hive.com
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly

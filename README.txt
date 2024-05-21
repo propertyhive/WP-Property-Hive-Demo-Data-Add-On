@@ -5,7 +5,7 @@ Requires at least: 3.8
 Tested up to: 6.5.3
 Stable tag: trunk
 Version: 1.0.3
-Homepage: http://wp-property-hive.com/addons/demo-data/
+Homepage: https://wp-property-hive.com/addons/demo-data/
 
 This add on for Property Hive adds the ability to create and remove a set of demo data
 
