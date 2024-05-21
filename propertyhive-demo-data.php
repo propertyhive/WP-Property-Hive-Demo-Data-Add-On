@@ -15,9 +15,6 @@ if ( ! class_exists( 'PH_Demo_Data' ) ) :
 final class PH_Demo_Data {
 
     const YES_OR_BLANK = array('', 'yes');
-    const NUM_DEMO_DATA_ITEMS = 10;
-    const NUM_FEATURES = 6;
-    const NUM_PROPERTY_PHOTOS = 1;
 
     /**
      * @var string
@@ -84,6 +81,21 @@ final class PH_Demo_Data {
         add_filter( "plugin_action_links_" . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );
     }
 
+    private function includes()
+    {
+        include_once( 'includes/class-ph-demo-data-address.php' );
+        include_once( 'includes/class-ph-demo-data-banks.php' );
+    }
+
+    /**
+     * Define PH Demo Data Constants
+     */
+    private function define_constants() 
+    {
+        define( 'PH_DEMO_DATA_PLUGIN_FILE', __FILE__ );
+        define( 'PH_DEMO_DATA_VERSION', $this->version );
+    }
+
     /**
      * Get sections
      *
@@ -119,26 +131,26 @@ final class PH_Demo_Data {
         echo '</ul><br class="clear" />';
     }
 
+    private function get_num_demo_data_items()
+    {
+        return apply_filters( 'propertyhive_demo_data_num_items', 10 );
+    }
+
+    private function get_num_features()
+    {
+        return apply_filters( 'propertyhive_demo_data_num_features', 6 );
+    }
+
+    private function get_num_property_photos()
+    {
+        return apply_filters( 'propertyhive_demo_data_num_property_photos', 1 );
+    }
+
     public function plugin_add_settings_link( $links )
     {
         $settings_link = '<a href="' . admin_url('admin.php?page=ph-settings&tab=demo_data') . '">' . __( 'Settings' ) . '</a>';
         array_push( $links, $settings_link );
         return $links;
-    }
-
-    private function includes()
-    {
-        include_once( 'includes/class-ph-demo-data-address.php' );
-        include_once( 'includes/class-ph-demo-data-banks.php' );
-    }
-
-    /**
-     * Define PH Demo Data Constants
-     */
-    private function define_constants() 
-    {
-        define( 'PH_DEMO_DATA_PLUGIN_FILE', __FILE__ );
-        define( 'PH_DEMO_DATA_VERSION', $this->version );
     }
 
     /**
@@ -180,7 +192,7 @@ final class PH_Demo_Data {
         {
             $data_fields = $this->get_section_data_fields($_POST['section']);
 
-            for ($x = 1; $x <= PH_Demo_Data::NUM_DEMO_DATA_ITEMS; $x++) {
+            for ($x = 1; $x <= $this->get_num_demo_data_items(); ++$x) {
                 $data_items[] = $this->build_data_item($data_fields);
             }
         }
@@ -373,7 +385,7 @@ final class PH_Demo_Data {
                                         shuffle($terms);
                                         foreach( $terms as $term )
                                         {
-                                            if ( $i > PH_Demo_Data::NUM_FEATURES ) { break; }
+                                            if ( $i > $this->get_num_features() ) { break; }
 
                                             $features_taxonomies[] = $term->term_id;
                                             ++$i;
@@ -387,8 +399,8 @@ final class PH_Demo_Data {
                                 }
                                 else
                                 {
-                                    $data_item['meta_fields']['_features'] = PH_Demo_Data::NUM_FEATURES;
-                                    for ($i = 0; $i < PH_Demo_Data::NUM_FEATURES; ++$i)
+                                    $data_item['meta_fields']['_features'] = $this->get_num_features();
+                                    for ($i = 0; $i < $this->get_num_features(); ++$i)
                                     {
                                         $data_item['meta_fields']['_feature_' . $i] = 'Feature ' . ( $i + 1 );
                                     }
@@ -428,7 +440,7 @@ final class PH_Demo_Data {
                                     shuffle($files);
 
                                     $media_ids = array();
-                                    for ($i = 0; $i < PH_Demo_Data::NUM_PROPERTY_PHOTOS; ++$i)
+                                    for ($i = 0; $i < $this->get_num_property_photos(); ++$i)
                                     {
                                         if ( isset($files[$i]) )
                                         {
@@ -1655,7 +1667,7 @@ final class PH_Demo_Data {
         {
             ?>
                 <h3>Generate Demo Data</h3>
-                <p>Clicking the button below will generate <?php echo PH_Demo_Data::NUM_DEMO_DATA_ITEMS; ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
+                <p>Clicking the button below will generate <?php echo $this->get_num_demo_data_items(); ?> pieces of randomly-generated demo data in each section for you to use within the system.<br><br>When you are finished with the data, it can be deleted by using the Delete Data option above.</p>
 
                 <p class="submit">
                     <input id="generate-demo-data" class="button-primary" type="button" value="Generate Demo Data" />
