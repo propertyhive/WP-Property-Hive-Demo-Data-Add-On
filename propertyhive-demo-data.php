@@ -3,7 +3,7 @@
  * Plugin Name: Property Hive Demo Data Add On
  * Plugin Uri: https://wp-property-hive.com/addons/demo-data/
  * Description: Add On for Property Hive allowing sets of test data to be automatically generated
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: PropertyHive
  * Author URI: https://wp-property-hive.com
  */
@@ -19,7 +19,7 @@ final class PH_Demo_Data {
     /**
      * @var string
      */
-    public $version = '2.0.0';
+    public $version = '2.0.1';
 
     /**
      * @var Property Hive The single instance of the class

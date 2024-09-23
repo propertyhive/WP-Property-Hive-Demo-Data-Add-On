@@ -2,9 +2,9 @@
 Contributors: PropertyHive,BIOSTALL
 Tags: propertyhive, property hive, property, real estate, software, estate agents, estate agent, demo data
 Requires at least: 3.8
-Tested up to: 6.5.3
+Tested up to: 6.6.2
 Stable tag: trunk
-Version: 2.0.0
+Version: 2.0.1
 Homepage: https://wp-property-hive.com/addons/demo-data/
 
 This add on for Property Hive adds the ability to create and remove a set of demo data
@@ -24,6 +24,11 @@ The manual installation method involves downloading the Property Hive Demo Data 
 Updating should work like a charm; as always though, ensure you backup your site just in case.
 
 == Changelog ==
+
+= 2.0.1 =
+* WP CLI integration so demo data can be generated on the command line using: create-demo-data
+* Run instructional text through __() so 'Property Hive' is translated by White Label add on
+* Declared support for WordPress 6.6.2
 
 = 2.0.0 =
 * Overhaul UI
