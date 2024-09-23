@@ -89,6 +89,28 @@ final class PH_Demo_Data {
         add_action( 'wp_ajax_propertyhive_delete_demo_data', array( $this, 'ajax_delete_demo_data' ) );
 
         add_filter( "plugin_action_links_" . plugin_basename( __FILE__ ), array( $this, 'plugin_add_settings_link' ) );
+
+        if ( class_exists( 'WP_CLI' ) ) 
+        {
+            WP_CLI::add_command( 'create-demo-data', array( $this, 'do_cli_command' ) );
+        }
+    }
+
+    public function do_cli_command()
+    {
+        $_POST['section'] = array('applicant', 'property');
+        $data_items = $this->ajax_get_section_demo_data();
+
+        $_POST['data_items'] = $data_items;
+        $records_inserted = $this->ajax_create_demo_data_records();
+
+        $_POST['section'] = array('appraisal', 'viewing', 'offer', 'sale', 'tenancy', 'enquiry');
+        $data_items = $this->ajax_get_section_demo_data();
+
+        $_POST['data_items'] = $data_items;
+        $records_inserted = $this->ajax_create_demo_data_records();
+
+        WP_CLI::success("Demo data created.");
     }
 
     private function includes()
@@ -213,9 +235,16 @@ final class PH_Demo_Data {
             }
         }
 
-        header( 'Content-Type: application/json; charset=utf-8' );
-        echo json_encode($data_items);
-        die();
+        if (defined('WP_CLI') && WP_CLI) 
+        {
+            return $data_items;
+        }
+        else
+        {
+            header( 'Content-Type: application/json; charset=utf-8' );
+            echo json_encode($data_items);
+            die();
+        }
     }
 
     private function build_data_item($fields, $id_stored_as = null)
@@ -1586,9 +1615,16 @@ final class PH_Demo_Data {
             }
         }
 
-        header( 'Content-Type: application/json; charset=utf-8' );
-        echo json_encode($records_inserted);
-        die();
+        if (defined('WP_CLI') && WP_CLI) 
+        {
+            return $records_inserted;
+        }
+        else
+        {
+            header( 'Content-Type: application/json; charset=utf-8' );
+            echo json_encode($records_inserted);
+            die();
+        }
     }
 
     private function create_demo_data_record( $data_item )
