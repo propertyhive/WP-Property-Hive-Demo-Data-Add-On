@@ -68,6 +68,7 @@ jQuery( function($){
             var data = {
                 action:  'propertyhive_delete_demo_data',
                 section: section,
+                nonce:   ph_demo_data.nonce
             };
             jQuery.post( ph_demo_data.ajax_url, data, function(response)
             {
@@ -121,6 +122,7 @@ jQuery( function($){
         var data = {
             action:  'propertyhive_get_section_demo_data',
             section: first_sections,
+            nonce:   ph_demo_data.nonce
         };
         jQuery.post( ph_demo_data.ajax_url, data, function(response)
         {
@@ -130,6 +132,7 @@ jQuery( function($){
             var data = {
                 action:     'propertyhive_create_demo_data_records',
                 data_items: response,
+                nonce:      ph_demo_data.nonce
             };
             jQuery.post( ph_demo_data.ajax_url, data, function(response)
             {
@@ -209,7 +212,8 @@ jQuery( function($){
 
         var data = {
             action:  'propertyhive_get_section_demo_data',
-            section: second_sections
+            section: second_sections,
+            nonce:   ph_demo_data.nonce
         };
         jQuery.post( ph_demo_data.ajax_url, data, function(response)
         {
@@ -232,6 +236,7 @@ jQuery( function($){
                 var data = {
                     action:     'propertyhive_create_demo_data_records',
                     data_items: data_items_to_use,
+                    nonce:      ph_demo_data.nonce
                 };
                 jQuery.post( ph_demo_data.ajax_url, data, function(response)
                 {

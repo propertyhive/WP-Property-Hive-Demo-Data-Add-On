@@ -3,7 +3,7 @@
  * Plugin Name: Property Hive Demo Data Add On
  * Plugin Uri: https://wp-property-hive.com/addons/demo-data/
  * Description: Add On for Property Hive allowing sets of test data to be automatically generated
- * Version: 2.0.1
+ * Version: 2.0.2
  * Author: PropertyHive
  * Author URI: https://wp-property-hive.com
  */
@@ -19,7 +19,7 @@ final class PH_Demo_Data {
     /**
      * @var string
      */
-    public $version = '2.0.1';
+    public $version = '2.0.2';
 
     /**
      * @var Property Hive The single instance of the class
@@ -93,6 +93,7 @@ final class PH_Demo_Data {
         if ( class_exists( 'WP_CLI' ) ) 
         {
             WP_CLI::add_command( 'create-demo-data', array( $this, 'do_cli_command' ) );
+            WP_CLI::add_command( 'refresh-demo-photos', array( $this, 'do_refresh_demo_photos_command' ) );
         }
     }
 
@@ -175,7 +176,355 @@ final class PH_Demo_Data {
 
     private function get_num_property_photos()
     {
-        return apply_filters( 'propertyhive_demo_data_num_property_photos', 1 );
+        return apply_filters( 'propertyhive_demo_data_num_property_photos', 5 );
+    }
+
+    /**
+     * Source JPEGs shipped with the add-on.
+     *
+     * Prefers named gallery sets (set-{style}-*.jpg) so a property gets
+     * a coherent house rather than mixed rooms from different homes.
+     *
+     * @return string[] Absolute file paths.
+     */
+    private function get_demo_photo_files()
+    {
+        $dir   = dirname( __FILE__ ) . '/assets/images';
+        $sets  = $this->get_demo_photo_sets();
+        $files = array();
+
+        foreach ( $sets as $set_files )
+        {
+            $files = array_merge( $files, $set_files );
+        }
+
+        if ( empty( $files ) )
+        {
+            $files = $this->glob_demo_images( $dir . '/*.' );
+            if ( empty( $files ) )
+            {
+                $files = glob( $dir . '/*.*' );
+            }
+        }
+
+        $files = is_array( $files ) ? array_values( $files ) : array();
+        shuffle( $files );
+
+        return apply_filters( 'propertyhive_demo_data_photo_files', $files );
+    }
+
+    /**
+     * Find image files without relying on the platform-specific GLOB_BRACE flag.
+     *
+     * @param string $prefix Glob prefix before the extension.
+     * @return string[]
+     */
+    private function glob_demo_images( $prefix )
+    {
+        $files = array();
+        foreach ( array( 'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG' ) as $extension )
+        {
+            $matches = glob( $prefix . $extension );
+            if ( is_array( $matches ) )
+            {
+                $files = array_merge( $files, $matches );
+            }
+        }
+
+        sort( $files );
+
+        return $files;
+    }
+
+    /**
+     * Group add-on images into named gallery sets.
+     *
+     * Files named set-{style}-{room}.jpg become one set per style, ordered
+     * living / kitchen / bedroom / garden / bathroom / exterior so the
+     * first image is a strong hero shot.
+     *
+     * @return array<string, string[]>
+     */
+    private function get_demo_photo_sets()
+    {
+        $dir   = dirname( __FILE__ ) . '/assets/images';
+        $files = $this->glob_demo_images( $dir . '/set-*.' );
+        $sets  = array();
+
+        if ( empty( $files ) )
+        {
+            return $sets;
+        }
+
+        $room_order = array(
+            'living'   => 0,
+            'kitchen'  => 1,
+            'bedroom'  => 2,
+            'garden'   => 3,
+            'bathroom' => 4,
+            'exterior' => 5,
+        );
+
+        foreach ( $files as $file )
+        {
+            if ( ! preg_match( '/set-([a-z0-9]+)-([a-z0-9]+)\./i', basename( $file ), $matches ) )
+            {
+                continue;
+            }
+
+            $set_name = strtolower( $matches[1] );
+            $room     = strtolower( $matches[2] );
+            $sets[ $set_name ][ $room ] = $file;
+        }
+
+        foreach ( $sets as $set_name => $rooms )
+        {
+            uksort(
+                $rooms,
+                function ( $a, $b ) use ( $room_order ) {
+                    $a_order = isset( $room_order[ $a ] ) ? $room_order[ $a ] : 99;
+                    $b_order = isset( $room_order[ $b ] ) ? $room_order[ $b ] : 99;
+                    if ( $a_order === $b_order )
+                    {
+                        return strcmp( $a, $b );
+                    }
+                    return $a_order - $b_order;
+                }
+            );
+            $sets[ $set_name ] = array_values( $rooms );
+        }
+
+        ksort( $sets );
+
+        return apply_filters( 'propertyhive_demo_data_photo_sets', $sets );
+    }
+
+    /**
+     * Pick the next gallery set, optionally matching a property type.
+     *
+     * @param string $property_type Optional property type name (house, flat / apartment, bungalow).
+     * @return string[] Absolute file paths.
+     */
+    private function pick_demo_photo_set( $property_type = '' )
+    {
+        static $set_index = 0;
+
+        $sets = $this->get_demo_photo_sets();
+        if ( empty( $sets ) )
+        {
+            return $this->get_demo_photo_files();
+        }
+
+        $type = strtolower( trim( $property_type ) );
+        $preferred = array();
+
+        if ( strpos( $type, 'flat' ) !== false || strpos( $type, 'apartment' ) !== false )
+        {
+            $preferred = array( 'apartment', 'loft', 'modern' );
+        }
+        elseif ( strpos( $type, 'bungalow' ) !== false )
+        {
+            $preferred = array( 'modern', 'newbuild', 'coastal' );
+        }
+        elseif ( strpos( $type, 'house' ) !== false )
+        {
+            $preferred = array( 'terrace', 'semi', 'newbuild', 'coastal', 'loft' );
+        }
+
+        $pool_keys = array_keys( $sets );
+        if ( ! empty( $preferred ) )
+        {
+            $matched = array_values( array_intersect( $preferred, $pool_keys ) );
+            if ( ! empty( $matched ) )
+            {
+                $pool_keys = $matched;
+            }
+        }
+
+        $key = $pool_keys[ $set_index % count( $pool_keys ) ];
+        ++$set_index;
+
+        return $sets[ $key ];
+    }
+
+    /**
+     * Copy a plugin image into the media library and return the attachment ID.
+     *
+     * @param string $file      Absolute path to a local image.
+     * @param int    $parent_id Owning demo property ID.
+     * @return int
+     */
+    private function sideload_demo_photo( $file, $parent_id = 0 )
+    {
+        if ( ! file_exists( $file ) )
+        {
+            return 0;
+        }
+
+        if ( ! function_exists( 'wp_generate_attachment_metadata' ) )
+        {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+        }
+
+        $filename = basename( $file );
+        $upload   = wp_upload_bits( $filename, null, file_get_contents( $file ) );
+
+        if ( isset( $upload['error'] ) && $upload['error'] !== false )
+        {
+            return 0;
+        }
+
+        $wp_filetype = wp_check_filetype( $upload['file'], null );
+        $attach_id   = wp_insert_attachment(
+            array(
+                'post_mime_type' => $wp_filetype['type'],
+                'post_title'     => preg_replace( '/\.[^.]+$/', '', $filename ),
+                'post_content'   => '',
+                'post_status'    => 'inherit',
+            ),
+            $upload['file'],
+            (int) $parent_id
+        );
+
+        if ( empty( $attach_id ) )
+        {
+            if ( file_exists( $upload['file'] ) )
+            {
+                if ( function_exists( 'wp_delete_file' ) )
+                {
+                    wp_delete_file( $upload['file'] );
+                }
+                else
+                {
+                    unlink( $upload['file'] );
+                }
+            }
+            return 0;
+        }
+
+        $attach_data = wp_generate_attachment_metadata( $attach_id, $upload['file'] );
+        wp_update_attachment_metadata( $attach_id, $attach_data );
+        update_post_meta( $attach_id, '_propertyhive_demo_data', 'yes' );
+
+        return (int) $attach_id;
+    }
+
+    /**
+     * Build a gallery of attachment IDs from a coherent add-on photo set.
+     *
+     * @param int    $count         Number of photos to attach.
+     * @param string $property_type Optional property type used to pick a matching set.
+     * @param int    $parent_id     Owning demo property ID.
+     * @return int[]
+     */
+    private function create_demo_photo_attachments( $count = null, $property_type = '', $parent_id = 0 )
+    {
+        if ( get_option( 'propertyhive_images_stored_as', '' ) === 'urls' )
+        {
+            return array();
+        }
+
+        $files = $this->pick_demo_photo_set( $property_type );
+        if ( empty( $files ) )
+        {
+            return array();
+        }
+
+        if ( $count === null )
+        {
+            $count = $this->get_num_property_photos();
+        }
+
+        $count = max( 0, (int) $count );
+        $file_count = count( $files );
+        $media_ids = array();
+        for ( $i = 0; $i < $count; ++$i )
+        {
+            // Repeat the coherent set when a filter requests more photos than it contains.
+            $attach_id = $this->sideload_demo_photo( $files[ $i % $file_count ], $parent_id );
+            if ( $attach_id )
+            {
+                $media_ids[] = $attach_id;
+            }
+        }
+
+        // Never replace a gallery with a partial batch. Remove uploads from the
+        // failed attempt so a retry does not leave orphaned attachments behind.
+        if ( count( $media_ids ) !== $count )
+        {
+            foreach ( $media_ids as $media_id )
+            {
+                wp_delete_attachment( $media_id, true );
+            }
+
+            return array();
+        }
+
+        return $media_ids;
+    }
+
+    /**
+     * WP-CLI: replace short galleries on existing demo properties with a 5-photo set.
+     */
+    public function do_refresh_demo_photos_command()
+    {
+        $target  = $this->get_num_property_photos();
+        $updated = 0;
+        $skipped = 0;
+
+        $query = new WP_Query( array(
+            'fields'         => 'ids',
+            'post_type'      => 'property',
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+            'meta_query'     => array(
+                array(
+                    'key'   => '_demo_data',
+                    'value' => 'yes',
+                ),
+            ),
+        ) );
+
+        foreach ( $query->posts as $post_id )
+        {
+            $photos = get_post_meta( $post_id, '_photos', true );
+            if ( ! is_array( $photos ) )
+            {
+                $photos = array();
+            }
+
+            $photos = array_values( array_filter( array_map( 'intval', $photos ) ) );
+
+            if ( count( $photos ) >= $target )
+            {
+                ++$skipped;
+                continue;
+            }
+
+            $terms = wp_get_post_terms( $post_id, 'property_type', array( 'fields' => 'names' ) );
+            $type  = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0] : '';
+
+            $new_ids = $this->create_demo_photo_attachments( $target - count( $photos ), $type, $post_id );
+            if ( empty( $new_ids ) )
+            {
+                continue;
+            }
+
+            // Refresh is additive so existing media that may have been reused
+            // elsewhere is never deleted or removed from the gallery.
+            $gallery_ids = array_merge( $photos, $new_ids );
+            update_post_meta( $post_id, '_photos', $gallery_ids );
+            ++$updated;
+
+            if ( defined( 'WP_CLI' ) && WP_CLI )
+            {
+                WP_CLI::log( sprintf( 'Property %d (%s) now has %d photos.', $post_id, get_the_title( $post_id ), count( $gallery_ids ) ) );
+            }
+        }
+
+        WP_CLI::success( sprintf( 'Updated photos on %d demo properties; skipped %d already at %d photos.', $updated, $skipped, $target ) );
     }
 
     public function plugin_add_settings_link( $links )
@@ -212,12 +561,22 @@ final class PH_Demo_Data {
 
         $params = array(
             'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'propertyhive_demo_data' ),
         );
         wp_localize_script( 'ph-demo-data', 'ph_demo_data', $params );
     }
 
     public function ajax_get_section_demo_data()
     {
+        if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) )
+        {
+            check_ajax_referer( 'propertyhive_demo_data', 'nonce' );
+            if ( ! current_user_can( 'manage_options' ) )
+            {
+                wp_send_json_error( array( 'message' => __( 'You are not allowed to generate demo data.', 'propertyhive' ) ), 403 );
+            }
+        }
+
         $data_items = array();
 
         if ( isset( $_POST['section'] ) )
@@ -249,6 +608,7 @@ final class PH_Demo_Data {
 
     private function build_data_item($fields, $id_stored_as = null)
     {
+        $photo_meta_keys = array();
         $data_item = array(
             'post' => $fields['post'],
             'meta_fields' => array(
@@ -474,51 +834,8 @@ final class PH_Demo_Data {
                                 }
                                 break;
                             case 'photos':
-
-                                if ( get_option('propertyhive_images_stored_as', '') == 'urls' )
-                                {
-
-                                }
-                                else
-                                {
-                                    $files = glob(dirname(__FILE__) . '/assets/images/*.*');
-                                    shuffle($files);
-
-                                    $media_ids = array();
-                                    for ($i = 0; $i < $this->get_num_property_photos(); ++$i)
-                                    {
-                                        if ( isset($files[$i]) )
-                                        {
-                                            $upload = wp_upload_bits( $files[$i], null, file_get_contents($files[$i]) );
-
-                                            if ( !isset($upload['error']) || $upload['error'] === FALSE )
-                                            {
-                                                // We don't already have a thumbnail and we're presented with an image
-                                                $wp_filetype = wp_check_filetype( $upload['file'], null );
-
-                                                $attachment = array(
-                                                    'post_mime_type' => $wp_filetype['type'],
-                                                    'post_content' => '',
-                                                    'post_status' => 'inherit'
-                                                );
-                                                $attach_id = wp_insert_attachment( $attachment, $upload['file'] );
-
-                                                if ( !empty($attach_id) )
-                                                {
-                                                    $attach_data = wp_generate_attachment_metadata( $attach_id, $upload['file'] );
-                                                    wp_update_attachment_metadata( $attach_id,  $attach_data );
-
-                                                    $media_ids[] = $attach_id;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    if ( !empty($media_ids) )
-                                    {
-                                        $data_item['meta_fields'][$meta_key] = $media_ids;
-                                    }
-                                }
+                                // Defer uploads until the property type taxonomy has been selected.
+                                $photo_meta_keys[] = $meta_key;
                                 break;
                             case 'post_id':
 
@@ -645,6 +962,11 @@ final class PH_Demo_Data {
                     }
                 }
             }
+        }
+
+        if ( ! empty( $photo_meta_keys ) )
+        {
+            $data_item['demo_photo_meta_keys'] = $photo_meta_keys;
         }
 
         if ( isset( $fields['related'] ) )
@@ -1604,12 +1926,25 @@ final class PH_Demo_Data {
 
     public function ajax_create_demo_data_records()
     {
+        if ( ! ( defined( 'WP_CLI' ) && WP_CLI ) )
+        {
+            check_ajax_referer( 'propertyhive_demo_data', 'nonce' );
+            if ( ! current_user_can( 'manage_options' ) )
+            {
+                wp_send_json_error( array( 'message' => __( 'You are not allowed to generate demo data.', 'propertyhive' ) ), 403 );
+            }
+        }
+
         $records_inserted = array();
         if ( isset( $_POST['data_items'] ) && is_array( $_POST['data_items'] ) )
         {
             foreach( $_POST['data_items'] as $data_item )
             {
                 $post_id = $this->create_demo_data_record($data_item);
+                if ( ! $post_id )
+                {
+                    continue;
+                }
                 if ( !isset($records_inserted[$data_item['post']['post_type']]) ) { $records_inserted[$data_item['post']['post_type']] = 0; }
                 ++$records_inserted[$data_item['post']['post_type']];
             }
@@ -1630,6 +1965,10 @@ final class PH_Demo_Data {
     private function create_demo_data_record( $data_item )
     {
         $post_id = wp_insert_post( $data_item['post'], true );
+        if ( is_wp_error( $post_id ) || ! $post_id )
+        {
+            return 0;
+        }
 
         if ( isset($data_item['meta_fields']) && !empty($data_item['meta_fields']) )
         {
@@ -1644,6 +1983,28 @@ final class PH_Demo_Data {
             foreach( $data_item['taxonomies'] as $taxonomy_name => $taxonomy_value)
             {
                 wp_set_post_terms( $post_id, $taxonomy_value, $taxonomy_name );
+            }
+        }
+
+        if ( isset( $data_item['demo_photo_meta_keys'] ) && is_array( $data_item['demo_photo_meta_keys'] ) )
+        {
+            $property_type = '';
+            if ( ! empty( $data_item['taxonomies']['property_type'] ) )
+            {
+                $term = get_term( $data_item['taxonomies']['property_type'], 'property_type' );
+                if ( ! is_wp_error( $term ) && ! empty( $term->name ) )
+                {
+                    $property_type = $term->name;
+                }
+            }
+
+            foreach ( $data_item['demo_photo_meta_keys'] as $photo_meta_key )
+            {
+                $media_ids = $this->create_demo_photo_attachments( null, $property_type, $post_id );
+                if ( is_string( $photo_meta_key ) && $photo_meta_key !== '' && ! empty( $media_ids ) )
+                {
+                    update_post_meta( $post_id, $photo_meta_key, $media_ids );
+                }
             }
         }
 
@@ -1674,6 +2035,12 @@ final class PH_Demo_Data {
 
     public function ajax_delete_demo_data()
     {
+        check_ajax_referer( 'propertyhive_demo_data', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) )
+        {
+            wp_send_json_error( array( 'message' => __( 'You are not allowed to delete demo data.', 'propertyhive' ) ), 403 );
+        }
+
         $records_deleted = 0;
         if ( isset( $_POST['section'] ) )
         {
@@ -1704,7 +2071,8 @@ final class PH_Demo_Data {
         if ( $query->have_posts() ) {
             while ( $query->have_posts() ) {
                 $query->the_post();
-                wp_delete_post(get_the_ID(), true);
+                $post_id = get_the_ID();
+                wp_delete_post($post_id, true);
                 ++$posts_deleted;
             }
         }
