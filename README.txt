@@ -4,7 +4,7 @@ Tags: propertyhive, property hive, property, real estate, software, estate agent
 Requires at least: 3.8
 Tested up to: 6.6.2
 Stable tag: trunk
-Version: 2.0.1
+Version: 2.0.2
 Homepage: https://wp-property-hive.com/addons/demo-data/
 
 This add on for Property Hive adds the ability to create and remove a set of demo data
@@ -24,6 +24,12 @@ The manual installation method involves downloading the Property Hive Demo Data 
 Updating should work like a charm; as always though, ensure you backup your site just in case.
 
 == Changelog ==
+
+= 2.0.2 =
+* Demo properties now receive 5 photos by default instead of 1
+* Added themed 5-photo gallery sets so each property gets a coherent house (living, kitchen, bedroom, garden/bathroom, exterior)
+* New WP-CLI command `refresh-demo-photos` backfills existing demo properties
+* Upload demo images using the real filename rather than the full local path
 
 = 2.0.1 =
 * WP CLI integration so demo data can be generated on the command line using: create-demo-data
